@@ -1,0 +1,232 @@
+#!/usr/bin/env ruby
+
+class Token
+  class << self #Clase singleton con sintaxis rara
+    attr_accessor :RegEx
+  end
+end
+
+class TokenIf < Token
+  @regEx = /\Aif/
+end
+
+class TokenElse < Token
+  @RegEx = /\Aelse/
+end
+
+class TokenThen < Token
+  @RegEx = /\Athen/
+end
+
+class TokenProgram < Token
+  @RegEx = /\Aprogram/
+end
+
+class TokenBegin < Token
+  @RegEx = /\Abegin/
+end
+
+class TokenEnd < Token
+  @RegEx = /\Aend/
+end
+
+class TokenDeclare < Token
+  @RegEx = /\Adeclare/
+end
+
+class TokenComa < Token
+  @RegEx = /\A,/
+end
+
+class TokenAs < Token
+  @RegEx = /\Aas/
+end
+
+class TokenInt < Token
+  @RegEx = /\Aint/
+end
+
+class TokenBool < Token
+  @RegEx = /\Abool/
+end
+
+class TokenRange < Token
+  @RegEx = /\Arange/
+end
+
+class TokenWrite < Token
+  @RegEx = /\Awrite/
+end
+
+class TokenRead < Token
+  @RegEx = /\Aread/
+end
+
+class TokenWriteLn < Token
+  @RegEx = /\Awriteln/
+end
+
+class TokenComillas < Token
+  @RegEx = /\A"/
+end
+
+class TokenPuntoYComa < Token
+  @RegEx = /\A;/
+end
+
+class TokenOr < Token
+  @RegEx = /\Aor/
+end
+
+class TokenAnd < Token
+  @RegEx = /\Aand/
+end
+
+class TokenNot < Token
+  @RegEx = /\Anot/
+end
+
+class TokenAbreParentesis < Token
+  @RegEx = /\A\(/
+end
+
+class TokenCierraParentesis < Token
+  @RegEx = /\A\)/
+end
+
+class TokenLength < Token
+  @RegEx = /\Alength/
+end
+
+class TokenTop < Token
+  @RegEx = /\Atop/
+end
+
+class TokenBottom < Token
+  @RegEx = /\Abottom/
+end
+
+class TokenRtoi < Token
+  @RegEx = /\Artoi/
+end
+
+class TokenCase < Token
+  @RegEx = /\Acase/
+end
+
+class TokenOf < Token
+  @RegEx = /\Aof/
+end
+
+class TokenFlecha < Token
+  @RegEx = /\A->/
+end
+
+class TokenDosPuntos < Token
+  @RegEx = /\A../
+end
+
+class TokenFor < Token
+  @RegEx = /\Afor/
+end
+
+class TokenIn < Token
+  @RegEx = /\Ain/
+end
+
+class TokenDo < Token
+  @RegEx = /\Ado/
+end
+
+class TokenWhile < Token
+  @RegEx = /\Awhile/
+end
+
+class TokenDo < Token
+  @RegEx = /\Ado/
+end
+
+class TokenMenorQue < Token
+  @RegEx = /\A</
+end
+
+class TokenMayorQue < Token
+  @RegEx = /\A>/
+end
+
+class TokenMenorIgualQue < Token
+  @RegEx = /\A<=/
+end
+
+class TokenMayorIgualQue < Token
+  @RegEx = /\A>=/
+end
+
+class TokenIgual < Token
+  @RegEx = /\A==/
+end
+
+class TokenDesigual < Token
+  @RegEx = /\A!=/
+end
+
+class TokenPertenece < Token
+  @RegEx = /\A>>/
+end
+
+class TokenMultiplicacion < Token
+  @RegEx = /\A\*/
+end
+
+class TokenModulo < Token
+  @RegEx = /\A%/
+end
+
+class TokenDivision < Token
+  @RegEx = /\A\//
+end
+
+class TokenSuma < Token
+  @RegEx = /\A\+/
+end
+
+class TokenResta < Token
+  @RegEx = /\A-/
+end
+
+class TokenNum < Token
+  @RegEx = /\A[0-9]+/
+end
+
+class TokenIdentificador < Token
+  @RegEx = /\A([a-z0-9A-Z]+)/
+
+    def agregarValor(valor)
+      @valor = valor
+    end
+end
+
+class TokenString < Token
+  @RegEx = /\A"([^"\\]|\\[n\\"])*"/
+end
+
+tokens = []
+ObjectSpace.each_object(Class) { |o| tokens << o if o.superclass == Token }
+#tokens.each {|t| print t; print "\n"}
+print tokens[0]
+
+def leerArchivo(archivo)
+  stream = archivo.read
+  return stream
+end
+
+def trabajarConArchivo
+  archivo = File.open(ARGV[0])
+  stream = leerArchivo(archivo)
+  archivo.close
+  return stream
+end
+
+#def buscarExpresion
+#  
+#end
