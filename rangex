@@ -23,7 +23,7 @@ class ErrorLexicografico < ObjetoDeTexto
   # Se encarga de pasar el error lexicográfico a string para imprimir
   # en pantalla.
   def to_s
-    "Error: caracter insesperado \"#{@texto}\" en línea #{@linea}, columna #{@columna}."
+    "Error: caracter inesperado \"#{@texto}\" en línea #{@linea}, columna #{@columna}."
   end
 end
 
@@ -41,7 +41,7 @@ class Token < ObjetoDeTexto
 
   # Se encarga de pasar el token a string para que imprima por pantalla.
   def to_s
-    "#{self.class.name} #{if [TkId, TkNum].include? self.class then @texto.inspect + ' ' else '' end}(Línea #{@linea}, Columna #{@columna})"
+    "#{self.class.name} #{if [TkString].include? self.class then @texto + ' ' else '' end} #{if [TkId, TkNum].include? self.class then @texto.inspect + ' ' else '' end}(Línea #{@linea}, Columna #{@columna})"
   end
 end
 
@@ -55,7 +55,7 @@ tokens = {
   'Division'          => /\A\/(?!=)/                 ,
   'DosPuntos'         => /\A\.\./                    ,
   'Flecha'            => /\A->/                      ,
-  'Id'                => /\A([a-zA-Z_][a-z0-9A-Z_]+)/,
+  'Id'                => /\A([a-zA-Z_][a-z0-9A-Z_]*)/,
   'Igual'             => /\A==/                      ,
   'MayorIgualQue'     => /\A>=/                      ,
   'MayorQue'          => /\A>(?![=>])/               ,
@@ -69,6 +69,7 @@ tokens = {
   'Resta'             => /\A-(?!>)/                  ,
   'String'            => /\A"([^"\\]|\\[n\\"])*"/    ,
   'Suma'              => /\A\+/                      ,
+  'Asignacion'        => /\A=/                       ,
 }
 
 # Se definen las palabras reservadas.
@@ -76,7 +77,7 @@ reserved_words = %w(and as begin bool bottom case declare do else end for if in 
 
 # Guardamos aqui dentro del diccionario de tokens las expresiones para las palabras reservadas.
 reserved_words.each do |w|
-  tokens[w.capitalize] = /\A#{w}/
+  tokens[w.capitalize] = /\A#{w}\b/
 end
 
 # Para cada token vamos creando las nuevas subclases para cada token.
@@ -101,7 +102,7 @@ end
 # subclases para cada token.
 $tokens = []
 ObjectSpace.each_object(Class) do |o|
-  $tokens << o if o.ancestors.include? Token and o != TkId
+  $tokens << o if o.ancestors.include? Token and o != TkId and o != Token
 end
 
 # Clase Lexer que guarda la lista de tokens reconodicos, errores encontrados
@@ -124,7 +125,7 @@ class Lexer
     return if longitud.zero?
 
     # Guardamos los n primeros caracteres.
-    consumido = @entrada[0, longitud.pred]
+    consumido = @entrada[0, longitud]
     # Guardamos el numero de saltos de lineas encontrados
     lineas    = (consumido + ' ').lines.to_a.length.pred
     # y se lo sumamos a la cantidad de lineas del lexer
@@ -140,7 +141,7 @@ class Lexer
     else
       # sino agregamos la cantidad pertinente a columna.
       consumido =~ /\n(.*)\z/
-      @columna  = $1.length
+      @columna  = 1 + $1.length
     end
   end
 
@@ -155,7 +156,7 @@ class Lexer
 
     # Creamos por defecto una clase Error Lexicográfico
     new_token_class = ErrorLexicografico
-    new_token_text  = @entrada[0]
+    new_token_text  = @entrada[0].chr
 
     # Para cada tipo de token vamos a revisar a ver si sus expresiones
     # regulares hacen match
@@ -176,11 +177,11 @@ class Lexer
       new_token_text  = $&
     end
 
-    # Consumimos la longitud del texto que hizo match
-    consume(new_token_text.length)
-
     # Creamos el nuevo token
     new_token = new_token_class.new(@linea, @columna, new_token_text)
+
+    # Consumimos la longitud del texto que hizo match
+    consume(new_token_text.length)
 
     # Si el nuevo token es un error lexicografico lo agregamos a la lista de
     # errores y si no lo es lo agregamos a la lista de tokens reconocidos.
