@@ -78,7 +78,7 @@ class Parser
 rule
        Programa: 'program' Instruccion                                 { result = Programa::new(val[1])                           }
                ;
-    Instruccion: Variable '=' Expresion                                { result = Asignacion::new([val[0], val[2]])               }
+    Instruccion: 'id' '=' Expresion                                    { result = Asignacion::new([val[0], val[2]])               }
                | 'begin' Declaraciones Instrucciones 'end'             { result = Bloque::new([val[1], val[2]])                   }
                | 'read' 'id'                                           { result = Read::new([val[2])                              }
                | 'write' ElementosSalida                               { result = Write::new([val[2])                             }
@@ -93,49 +93,50 @@ rule
  LDeclaraciones: Declaracion                                           { result = [val[0]]                                        }
                | LDeclaraciones ';' Declaracion                        { result = val[0] + [val[2]]                               }
                ;
-    Declaracion: Variables 'as' Tipo                                   {                                                          } # NO SE QUE PONER AQUI
+    Declaracion: Variables 'as' Tipo                                   { result = { :vars => val[0], :tipo => val[2] }            } # NO SE QUE PONER AQUI
                ;
-           Tipo: 'num'                                                 { result = Tipo::new([val[0]])                             }
-               | 'bool'                                                { result = Tipo::new([val[0]])                             }
-               | 'range'                                               { result = Tipo::new([val[0]])                             }
+           Tipo: 'num'                                                 { result = :num                                            }
+               | 'bool'                                                { result = :bool                                           }
+               | 'range'                                               { result = :range                                          }
                ;
       Variables: Variables ',' 'id'                                    { result = val[0] + [val[2]]                               }
                | 'id'                                                  { result = [val[0]]                                        }
                ;
-  Instrucciones: Instruccion                                           {                                                          }
-               | Instrucciones ';' Instruccion                         {                                                          }
+  Instrucciones: Instruccion                                           { result = [val[0]]                                        }
+               | Instrucciones ';' Instruccion                         { result = val[0] + [val[2]]                               }
                ;
-ElementosSalida: ElementoSalida                                        {                                                          }
-               | ElementosSalida ',' ElementoSalida                    {                                                          }
+ElementosSalida: ElementoSalida                                        { result = [val[0]]                                        }
+               | ElementosSalida ',' ElementoSalida                    { result = val[0] + [val[2]]                               }
                ;
- ElementoSalida: 'str'                                                 {                                                          }
-               | 'id'                                                  {                                                          }
+ ElementoSalida: 'str'                                                 { result = String::new([val[0]])                           }
+               | 'id'                                                  { result = Entero::new([val[0]])                           }
                ;
-      Expresion: 'int'                                                 {                                                          }
-               | 'true'                                                {                                                          }
-               | 'false'                                               {                                                          }
-               | 'bottom' '(' Expresion ')'                            {                                                          }
-               | 'length' '(' Expresion ')'                            {                                                          }
-               | 'rtoi'   '(' Expresion ')'                            {                                                          }
-               | 'top'    '(' Expresion ')'                            {                                                          }
-               | Expresion '%'   Expresion                             {                                                          }
-               | Expresion '*'   Expresion                             {                                                          }
-               | Expresion '+'   Expresion                             {                                                          }
-               | Expresion '-'   Expresion                             {                                                          }
-               | Expresion '..'  Expresion                             {                                                          }
-               | Expresion '/'   Expresion                             {                                                          }
-               | Expresion '/='  Expresion                             {                                                          }
-               | Expresion '<'   Expresion                             {                                                          }
-               | Expresion '<='  Expresion                             {                                                          }
-               | Expresion '<>'  Expresion                             {                                                          }
-               | Expresion '=='  Expresion                             {                                                          }
-               | Expresion '>'   Expresion                             {                                                          }
-               | Expresion '>='  Expresion                             {                                                          }
-               | Expresion '>>'  Expresion                             {                                                          }
-               | Expresion 'and' Expresion                             {                                                          }
-               | Expresion 'or'  Expresion                             {                                                          }
-               | 'not' Expresion                                       {                                                          }
-               | '-'   Expresion =UMINUS                               {                                                          }
+      Expresion: 'int'                                                 { result = Entero::new([val[0]])                           }
+               | 'true'                                                { result = True::new([])                                   }
+               | 'false'                                               { result = False::new([])                                  }
+               | 'id'                                                  { result = Variable::new([val[0]])                         }
+               | 'bottom' '(' Expresion ')'                            { result = Funcion_Bottom::new([val[2]])                   }
+               | 'length' '(' Expresion ')'                            { result = Funcion_Length::new([val[2]])                   }
+               | 'rtoi'   '(' Expresion ')'                            { result = Funcion_Rtoi::new([val[2]])                     }
+               | 'top'    '(' Expresion ')'                            { result = Funcion_Top::new([val[2]])                      }
+               | Expresion '%'   Expresion                             { result = Modulo::new([val[0], val[2]])                   }
+               | Expresion '*'   Expresion                             { result = Multiplicacion::new([val[0], val[2]])           }
+               | Expresion '+'   Expresion                             { result = Suma::new([val[0], val[2]])                     }
+               | Expresion '-'   Expresion                             { result = Resta::new([val[0], val[2]])                    }
+               | Expresion '..'  Expresion                             { result = Construccion::new([val[0], val[2]])             }
+               | Expresion '/'   Expresion                             { result = Division::new([val[0], val[2]])                 }
+               | Expresion '/='  Expresion                             { result = Desigual::new([val[0], val[2]])                 }
+               | Expresion '<'   Expresion                             { result = Menor_Que::new([val[0], val[2]])                }
+               | Expresion '<='  Expresion                             { result = Menor_Igual_Que::new([val[0], val[2]])          }
+               | Expresion '<>'  Expresion                             { result = Interseccion::new([val[0], val[2]])             }
+               | Expresion '=='  Expresion                             { result = Igual::new([val[0], val[2]])                    }
+               | Expresion '>'   Expresion                             { result = Mayor_Que::new([val[0], val[2]])                }
+               | Expresion '>='  Expresion                             { result = Mayor_Igual_Que::new([val[0], val[2]])          }
+               | Expresion '>>'  Expresion                             { result = Pertenece::new([val[0], val[2]])                }
+               | Expresion 'and' Expresion                             { result = And::new([val[0], val[2]])                      }
+               | Expresion 'or'  Expresion                             { result = Or::new([val[0], val[2]])                       }
+               | 'not' Expresion                                       { result = Not::new([val[1]])                              }
+               | '-'   Expresion =UMINUS                               { result = Menos_Unario([val[1]])                          }
                ;
 
 ---- header ----
