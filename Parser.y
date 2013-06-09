@@ -100,9 +100,9 @@ rule
                ;
     Declaracion: Variables 'as' Tipo                                   { result = Declaracion::new(val[0], val[2])                }
                ;
-           Tipo: 'num'                                                 { result = :num                                            }
-               | 'bool'                                                { result = :bool                                           }
-               | 'range'                                               { result = :range                                          }
+           Tipo: 'num'                                                 { result = val[0]                                          }
+               | 'bool'                                                { result = val[0]                                          }
+               | 'range'                                               { result = val[0]                                          }
                ;
       Variables: Variables ',' 'id'                                    { result = val[0] + [val[2]]                               }
                | 'id'                                                  { result = [val[0]]                                        }

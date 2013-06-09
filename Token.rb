@@ -36,11 +36,6 @@ class Token < ObjetoDeTexto
   end
 
   attr_accessor :linea, :columna
-
-  # Se encarga de pasar el token a string para que imprima por pantalla.
-  def to_s
-    "#{self.class.name} #{if [TkString].include? self.class then @texto + ' ' else '' end} #{if [TkId, TkNum].include? self.class then @texto.inspect + ' ' else '' end}(Línea #{@linea}, Columna #{@columna})"
-  end
 end
 
 # Se define un diccionario que contiene las expresiones regulares para cada
@@ -102,4 +97,37 @@ end
 $tokens = []
 ObjectSpace.each_object(Class) do |o|
   $tokens << o if o.ancestors.include? Token and o != TkId and o != Token
+end
+
+class Token
+  def text
+    ''
+  end
+
+  # Se encarga de pasar el token a string para que imprima por pantalla.
+  def to_s
+    "#{self.class.name} #{text}(Línea #{@linea}, Columna #{@columna})"
+  end
+
+  def to_string(profundidad)
+    @texto
+  end
+end
+
+class TkString
+  def text
+    @texto + ' '
+  end
+end
+
+class TkId
+  def text
+    @texto.inspect + ' '
+  end
+end
+
+class TkNum
+  def text
+    @texto.inspect + ' '
+  end
 end
