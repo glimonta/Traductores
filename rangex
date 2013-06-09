@@ -15,7 +15,10 @@ def main
   # Mientras el lexer siga leyendo e identificando tokens o errores en el texto de entrada el programa corre
   t = false
   while (!t) do
-    t = lexer.yylex.nil?
+    begin
+      t = lexer.yylex.nil?
+    rescue ErrorLexicografico => error
+    end
   end
 
   # Finalmente se imprime el lexer.

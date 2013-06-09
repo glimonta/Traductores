@@ -85,8 +85,10 @@ class Lexer
     # errores y si no lo es lo agregamos a la lista de tokens reconocidos.
     if new_token.is_a? ErrorLexicografico then
       @errores << new_token
+      raise new_token
     else
       @tokens << new_token
+      return new_token
     end
   end
 
