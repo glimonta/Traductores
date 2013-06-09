@@ -131,3 +131,11 @@ class TkNum
     @texto.inspect + ' '
   end
 end
+
+class Array
+  def to_string(profundidad)
+    inject('') do |acum, objeto|
+      acum + '  '*profundidad + '- ' objeto.to_string(profundidad.succ) + "\n" 
+    end
+  end
+end
