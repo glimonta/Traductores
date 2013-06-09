@@ -136,7 +136,7 @@ ElementosSalida: ElementoSalida                                        { result 
                | Expresion 'and' Expresion                             { result = And::new([val[0], val[2]])                      }
                | Expresion 'or'  Expresion                             { result = Or::new([val[0], val[2]])                       }
                | 'not' Expresion                                       { result = Not::new([val[1]])                              }
-               | '-'   Expresion =UMINUS                               { result = Menos_Unario([val[1]])                          }
+               | '-'   Expresion =UMINUS                               { result = Menos_Unario::new([val[1]])                     }
                ;
 
 ---- header ----
