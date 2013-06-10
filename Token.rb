@@ -54,7 +54,7 @@ tokens = {
   'MayorIgualQue'     => /\A>=/                      ,
   'MayorQue'          => /\A>(?![=>])/               ,
   'MenorIgualQue'     => /\A<=/                      ,
-  'MenorQue'          => /\A<(?!=)/                  ,
+  'MenorQue'          => /\A<(?![=>])/               ,
   'Modulo'            => /\A%/                       ,
   'Multiplicacion'    => /\A\*/                      ,
   'Num'               => /\A[0-9]+/                  ,
@@ -63,7 +63,7 @@ tokens = {
   'Resta'             => /\A-(?!>)/                  ,
   'String'            => /\A"([^"\\]|\\[n\\"])*"/    ,
   'Suma'              => /\A\+/                      ,
-  'Asignacion'        => /\A=/                       ,
+  'Asignacion'        => /\A=(?!=)/                  ,
 }
 
 # Se definen las palabras reservadas.
@@ -135,7 +135,7 @@ end
 class Array
   def to_string(profundidad)
     inject('') do |acum, objeto|
-      acum + '  '*profundidad + '- ' objeto.to_string(profundidad.succ) + "\n" 
+      acum + "\n" + '  '*profundidad + '- ' + objeto.to_string(profundidad.succ).sub(/\A[\n ]*/, '')
     end
   end
 end

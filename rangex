@@ -4,15 +4,24 @@
 #John Delgado 10-10196
 
 require 'Lexer'
+require 'Parser'
 
 # En el main se llama a los metodos declarados anteriormente
 def main
   # Leemos la entrada del archivo
   entrada = File::read(ARGV[0])
 
-  # Creamos un nuevo lexer con esta entrada
-  lexer = Lexer::new entrada
-  # Mientras el lexer siga leyendo e identificando tokens o errores en el texto de entrada el programa corre
+  # Creamos un nuevo lexer con esta entrada, se lo pasamos al parser que
+  # genera el ast y se imprime por pantalla el mismo.
+  begin
+    puts Parser::new.parse(Lexer::new entrada)
+  rescue ErrorSintactico => e
+    puts e
+  end
+end
+
+def bleh
+  lexer = Lexer::new File::read(ARGV[0])
   t = false
   while (!t) do
     begin
@@ -20,9 +29,8 @@ def main
     rescue ErrorLexicografico => error
     end
   end
-
-  # Finalmente se imprime el lexer.
   puts lexer
 end
 
 main
+#bleh

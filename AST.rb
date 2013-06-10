@@ -1,12 +1,15 @@
 def generaClase(superclase, nombre, atributos)
   clase = Class::new(superclase) do
-    def initialize(*argumentos)
-      raise ArgumentError::new("wrong number of arguments (#{ argumentos.length } for #{ atributos.length })") if argumentos.length != atributos.length
+    @atributos = atributos
 
-      @hijos = [atributos, argumentos].transpose.inject({}) do |acum, x|
-        acum[x[0]] = x[1]
-        acum
-      end
+    class << self
+      attr_accessor :atributos
+    end
+
+    def initialize(*argumentos)
+      raise ArgumentError::new("wrong number of arguments (#{ argumentos.length } for #{ self.class.atributos.length })") if argumentos.length != self.class.atributos.length
+
+      @hijos = [self.class.atributos, argumentos].transpose
     end
   end
   Object::const_set nombre, clase
@@ -14,7 +17,7 @@ end
 
 generaClase(Object, 'AST', [])
   generaClase(AST, 'Declaracion', ['variables', 'tipo'])
-  generaClase(AST, 'String'     , ['valor'])
+  generaClase(AST, 'Declaraciones', ['declaraciones'])
   generaClase(AST, 'Programa'   , ['instruccion'])
   generaClase(AST, 'Caso'       , ['rango', 'instruccion'])
   generaClase(AST, 'Expresion', [])
@@ -47,29 +50,37 @@ generaClase(Object, 'AST', [])
     generaClase(Expresion, 'Funcion_Top'    , ['argumento'])
   generaClase(AST, 'Instruccion', [])
     generaClase(Instruccion, 'Asignacion'      , ['var', 'val'])
-    generaClase(Instruccion, 'Bloque'          , ['declaraciones', 'instrucciones'])
+    generaClase(Instruccion, 'Bloque'          , ['.declaraciones', '-instrucciones'])
     generaClase(Instruccion, 'Read'            , ['variable'])
     generaClase(Instruccion, 'Write'           , ['elementos'])
-    generaClase(Instruccion, 'Condicional_Else', ['condicion', 'instruccionIf', 'instruccionElse'])
-    generaClase(Instruccion, 'Condicional_If'  , ['condicion', 'instruccion'])
+    generaClase(Instruccion, 'Writeln'         , ['elementos'])
+    generaClase(Instruccion, 'Condicional_Else', ['condicion', 'verdadero', 'falso'])
+    generaClase(Instruccion, 'Condicional_If'  , ['condicion', 'verdadero'])
     generaClase(Instruccion, 'Case'            , ['exp', 'casos'])
     generaClase(Instruccion, 'Iteracion_Det'   , ['variable', 'rango', 'instruccion'])
     generaClase(Instruccion, 'Iteracion_Indet' , ['condicion', 'instruccion'])
 
 class AST
   def to_s
-    to_string 0
+    (to_string 0).sub(/\A[\n ]*/, '').gsub(/\s+$/, '')
   end
 
   def to_string(profundidad)
-    @hijos.inject(self.class.to_s) do |acum, cont|
-      acum + "\n  #{cont[0]} : #{ cont[1].to_string(profundidad + 1) }"
+    @hijos.inject("\n" + self.class.to_s.upcase) do |acum, cont|
+      case cont[0]
+        when /\A\./
+          acum
+        when /\A-/
+          acum + cont[1].to_string(1)
+        else
+          acum + "\n  #{cont[0]}: #{ cont[1].to_string(2) }"
+        end
     end.gsub(/^/, '  '*profundidad)
   end
 end
 
-#TODO para el caso de cosas como listas el to_string será distinto ya que
-#to_string fallará cuando haga cont[1].to_stringblahblahblah entonces se
-#tiene que sobreescribir este metodo y blah blah
-#Para los tokens pasa igual, cuando llego a ellos to_string no va a servir
-#asi que tengo que hacer un to_string que les sirva a ellos para imprimirse.
+class Programa
+  def to_string(profundidad)
+    @hijos[0][1].to_string(profundidad)
+  end
+end
