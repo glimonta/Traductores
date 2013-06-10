@@ -20,17 +20,4 @@ def main
   end
 end
 
-def bleh
-  lexer = Lexer::new File::read(ARGV[0])
-  t = false
-  while (!t) do
-    begin
-      t = lexer.yylex.nil?
-    rescue ErrorLexicografico => error
-    end
-  end
-  puts lexer
-end
-
 main
-#bleh

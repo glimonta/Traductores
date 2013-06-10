@@ -1,10 +1,15 @@
+#Gabriela Limonta 10-10385
+#John Delgado 10-10196
+
 class Parser
+  #Declaramos los tokens
   token '<=' '<>' '<' '==' '=' '>=' '>>' '>' '-' ',' ';' '/=' '..' '(' ')'
         '*' '%' '+' 'and' 'as' 'begin' 'bool' 'bottom' 'case' 'declare' 'do'
         'else' 'end' 'false' 'for' 'id' 'if' 'in' 'int' 'length' 'not'
         'of' 'or' 'program' 'range' 'read' 'rtoi' 'str' 'then' 'top' 'true'
         'while' 'write' 'writeln' UMINUS
 
+  #Declaramos la precedencia de los operadores
   prechigh
     nonassoc UMINUS
     left     '..'
@@ -76,6 +81,7 @@ class Parser
   end
 
   start Programa
+#Aqui declaramos la gramatica
 rule
        Programa: 'program' Instruccion                                { result = Programa::new(val[1])                         }
                ;
@@ -153,11 +159,15 @@ ElementosSalida: ElementoSalida                                       { result =
 require 'Lexer'
 require 'AST'
 
+#Creamos una clase para los errores sintacticos
 class ErrorSintactico < RuntimeError
+  #Se encarga de inicializar un error sintactico indicandole
+  #en que token ocurrió el mismo
   def initialize(token)
     @token = token
   end
 
+  #Se encarga de pasar el error sintactico a string para imprimirlo en pantalla
   def to_s
     "Error de sintaxis en linea #{@token.linea}, columna #{@token.columna}, token '#{@token.texto}' inesperado."
   end
@@ -165,16 +175,22 @@ end
 
 ---- inner ----
 
+    #En caso de que haya un error se crea un
+    #nuevo error sintactico y levantamos una excepcion
     def on_error(id, token, stack)
       raise ErrorSintactico::new(token)
     end
 
+    #Se encarga de buscar el proximo token usando el yylex del lexer.
+    #Retorna el par [clase, token]
     def next_token
       token = @lexer.yylex
       return [false, false] unless token
       return [token.class, token]
     end
 
+    #Se encarga de hacer el parse del lexer utilizando
+    #el metodo parse que crea racc.
     def parse(lexer)
       @yydebug = true # DEBUG
       @lexer  = lexer

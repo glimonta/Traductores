@@ -1,3 +1,6 @@
+#Gabriela Limonta 10-10385
+#John Delgado 10-10196
+
 def generaClase(superclase, nombre, atributos)
   clase = Class::new(superclase) do
     @atributos = atributos
