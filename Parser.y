@@ -196,16 +196,23 @@ end
       @lexer  = lexer
       @tokens = []
       begin
+        # Hacemos parse para generar el ast
         ast = do_parse
+      # Si hay un error lexicografico se hace rescue
+      # para manejar la excepcion del error
       rescue ErrorLexicografico => error
         t = false
+        # Mientras el lexer siga leyendo e identificando tokens o
+        # errores en el texto de entrada el programa corre
         while (!t) do
           begin
             t = lexer.yylex.nil?
           rescue ErrorLexicografico => error
           end
         end
+        # Finalmente se imprime el lexer
         puts lexer
       end
+      # Se retorna el AST
       return ast
     end

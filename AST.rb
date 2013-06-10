@@ -31,6 +31,7 @@ def generaClase(superclase, nombre, atributos)
   Object::const_set nombre, clase
 end
 
+# A continuación generamos todas las clases necesarias para cubrir el lenguaje.
 generaClase(Object, 'AST', [])
   generaClase(AST, 'Declaracion', ['variables', 'tipo'])
   generaClase(AST, 'Declaraciones', ['declaraciones'])
@@ -76,26 +77,49 @@ generaClase(Object, 'AST', [])
     generaClase(Instruccion, 'Iteracion_Det'   , ['variable', 'rango', 'instruccion'])
     generaClase(Instruccion, 'Iteracion_Indet' , ['condicion', 'instruccion'])
 
+# Modificamos la clase AST para agregarle el to_s y to_string
 class AST
+  # Se encarga de pasar a string el AST llamando a to_string con profundidad cero
+  # y eliminando cualquier salto de línea del inicio y cualquier cantidad de
+  # espacios en blancos.
   def to_s
     (to_string 0).sub(/\A[\n ]*/, '').gsub(/\s+$/, '')
   end
 
+  # Se encarga de pasar a string el AST a la profundidad indicada.
   def to_string(profundidad)
+    # Creamos un string con el nombre de la clase en mayusculas
+    # continuado por el string generado por to_string de sus hijos.
     @hijos.inject("\n" + self.class.to_s.upcase) do |acum, cont|
+      # Se utiliza un formato que permite ignorar la impresion de ciertos
+      # nombres de atributos y/o elementos de alguna clase. Por ejemplo:
+      # No se deben imprimir las declaraciones ni la palabra 'instrucciones'
+      # para un bloque. De este modo se le coloca un . a lo que no queremos imprimir
+      # (declaraciones) y un - a los titulos de atributos que no queremos imprimir
+      # (instrucciones)
       case cont[0]
+        # Si el primer caracter es un '.' se genera solamente lo que se lleva acumulado
         when /\A\./
           acum
+        # Si el primer caracter es un '-' se genera el string acumulado mas el to_string
+        # del contenido del atributo
         when /\A-/
           acum + cont[1].to_string(1)
+        # En cualquier otro caso se genera el string que contiene el nombre del atributo
+        # seguido por dos puntos y luego el to_string del contenido del atributo
         else
           acum + "\n  #{cont[0]}: #{ cont[1].to_string(2) }"
         end
+    # Por ultimo se identa adecuadamente sustituyendo el inicio del string por la cantidad
+    # de espacios en blanco necesarios (2*profundidad)
     end.gsub(/^/, '  '*profundidad)
   end
 end
 
+# Modificamos la clase Programa para agregar un to_string diferente
 class Programa
+  # Se encarga de imprimir el contenido del programa
+  # sin imprimir la palabra 'PROGRAMA' en el AST
   def to_string(profundidad)
     @hijos[0][1].to_string(profundidad)
   end
