@@ -1,20 +1,33 @@
 #Gabriela Limonta 10-10385
 #John Delgado 10-10196
 
+# Se encarga de crear una nueva clase dada la superclase,
+# el nombre de la nueva clase y los atributos que tendrá
+# la misma.
 def generaClase(superclase, nombre, atributos)
+  #Creamos una nueva clase que herede de superclase
   clase = Class::new(superclase) do
+    #Asignamos los atributos
     @atributos = atributos
 
+    # Queremos que el campo atributos sea una variable de la clase y no de cada subclase
+    # por lo que declaramos atributos en la clase singleton
     class << self
       attr_accessor :atributos
     end
 
+    # Se encarga de inicializar el elemento de la clase
     def initialize(*argumentos)
+      # Se levanta una excepcion si el numero de argumentos es diferente
+      # al numero de atributos que debe tener.
       raise ArgumentError::new("wrong number of arguments (#{ argumentos.length } for #{ self.class.atributos.length })") if argumentos.length != self.class.atributos.length
 
+      # En hijos se tendrá un arreglo que contiene pares de nombres de atributos y su valor correspondiente.
       @hijos = [self.class.atributos, argumentos].transpose
     end
   end
+
+  # Se le asigna el nombre a la clase
   Object::const_set nombre, clase
 end
 

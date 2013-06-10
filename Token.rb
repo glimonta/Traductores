@@ -29,7 +29,7 @@ end
 # tiene una expresión regular que permite identificar al token dentro
 # del contexto mayor
 class Token < ObjetoDeTexto
-  # Queremos que el campo regex sera una variable de la clase y no de cada subclase
+  # Queremos que el campo regex sea una variable de la clase y no de cada subclase
   # en particular de Token por lo que declaramos regex en la clase singleton de Token
   class << self #Clase singleton
     attr_accessor :regex
@@ -99,7 +99,11 @@ ObjectSpace.each_object(Class) do |o|
   $tokens << o if o.ancestors.include? Token and o != TkId and o != Token
 end
 
+#Modificamos la clase Token para facilitar la impresión del AST.
 class Token
+  # Para la mayoria de los tokens el texto que contienen será nulo
+  # excepciones de esto son TkId, TkString y TkNum donde se guarda
+  # el valor del token.
   def text
     ''
   end
@@ -109,30 +113,45 @@ class Token
     "#{self.class.name} #{text}(Línea #{@linea}, Columna #{@columna})"
   end
 
+  # Se encarga de pasar el token a string para que pueda imprimirse por
+  # pantalla en el AST con la identación adecuada.
+  # devuelve el texto del token.
   def to_string(profundidad)
     @texto
   end
 end
 
+# Modificamos la clase TkString para agregar el metodo text
 class TkString
+  # Se encarga de devolver el texto del string mas un espacio en blanco
+  # para mayor legibilidad al imprimirlo en pantalla.
   def text
     @texto + ' '
   end
 end
 
+# Modificamos la clase TkId para agregar el metodo text
 class TkId
+  # Se encarga de devolver el texto del identificador mas un espacio en blanco
+  # para mayor legibilidad al imprimirlo en pantalla.
   def text
     @texto.inspect + ' '
   end
 end
 
+# Modificamos la clase TkNum para agregar el metodo text
 class TkNum
+  # Se encarga de devolver el numero como texto mas un espacio en blanco
+  # para mayor legibilidad al imprimirlo en pantalla.
   def text
     @texto.inspect + ' '
   end
 end
 
+# Modificamos la clase Array para agregar un metodo to_string que permita imprimir listas
+# con identación adecuada al resto del formato de salida.
 class Array
+  # Se encarga de construir un string con la lista para imprimirlo por pantalla.
   def to_string(profundidad)
     inject('') do |acum, objeto|
       acum + "\n" + '  '*profundidad + '- ' + objeto.to_string(profundidad.succ).sub(/\A[\n ]*/, '')
