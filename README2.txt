@@ -38,6 +38,8 @@ Para esta segunda entrega se continua utilizando el lenguaje Ruby
 (version 1.8.7) junto con el generador de analizadores sintácticos Racc
 (version 1.4.5) para la realización de un parser del lenguaje RangeX.
 
+Se incluye ademas un makefile que ejecuta racc sobre el archivo Parser.y y genera Parser.rb.
+
 Para el reconocimiento de este lenguaje se diseñó una gramática libre de
 contexto que se presenta a continuación.
 
