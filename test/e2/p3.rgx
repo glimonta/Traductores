@@ -7,7 +7,7 @@ program
     begin 
       for j in (0..m) do 
       begin 
-        if (((i + j) %2) /= 0) then 
+        if (((i + j) %2) /= 0) then
         begin
           write i * j, " "
         end
