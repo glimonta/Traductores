@@ -14,7 +14,13 @@ def main
   # Creamos un nuevo lexer con esta entrada, se lo pasamos al parser que
   # genera el ast y se imprime por pantalla el mismo.
   begin
-    puts Parser::new.parse(Lexer::new entrada)
+    # Creamos el ast
+    ast = Parser::new.parse(Lexer::new entrada)
+    # Si no es nil, es porque no hubo errores lexicográficos
+    # de modo que imprimimos el ast, si ast es nil es porque
+    # hubo errores lexicográficos por lo que no imprimiriamos
+    # el ast.
+    if (nil != ast) then puts ast end
   rescue ErrorSintactico => e
     puts e
   end

@@ -9,7 +9,7 @@ end
 
 # Un error lexicográfico es un objeto que guarda la posición de un error en un contexto
 # del programa
-class ErrorLexicografico < ObjetoDeTexto
+class ErrorLexicografico < Exception
   # Se encarga de inicializar un error lexicografico indicandole
   # en que posicion está y por que texto está conformado
   def initialize(linea, columna, texto)
