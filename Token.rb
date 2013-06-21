@@ -56,13 +56,13 @@ tokens = {
   'MenorIgualQue'     => /\A<=/                      ,
   'MenorQue'          => /\A<(?![=>])/               ,
   'Modulo'            => /\A%/                       ,
-  'Multiplicacion'    => /\A\*/                      ,
+  'Por'               => /\A\*/                      ,
   'Num'               => /\A[0-9]+/                  ,
   'Pertenece'         => /\A>>/                      ,
   'PuntoYComa'        => /\A;/                       ,
   'Resta'             => /\A-(?!>)/                  ,
   'String'            => /\A"([^"\\]|\\[n\\"])*"/    ,
-  'Suma'              => /\A\+/                      ,
+  'Mas'               => /\A\+/                      ,
   'Asignacion'        => /\A=(?!=)/                  ,
 }
 

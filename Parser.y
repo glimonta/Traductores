@@ -16,9 +16,9 @@ class Parser
     left     '*' '/' '%'
     left     '+' '-'
     left     '<>'
-    nonassoc '>>'
-    left     '==' '/='
     nonassoc '<' '<=' '>=' '>'
+    left     '==' '/='
+    nonassoc '>>'
     left     'not'
     left     'and'
     left     'or'
@@ -41,13 +41,13 @@ class Parser
     '<='      'TkMenorIgualQue'
     '<'       'TkMenorQue'
     '%'       'TkModulo'
-    '*'       'TkMultiplicacion'
+    '*'       'TkPor'
     'num'     'TkNum'
     '>>'      'TkPertenece'
     ';'       'TkPuntoYComa'
     '-'       'TkResta'
     'str'     'TkString'
-    '+'       'TkSuma'
+    '+'       'TkMas'
     '='       'TkAsignacion'
     'and'     'TkAnd'
     'as'      'TkAs'
@@ -97,9 +97,9 @@ rule
                | 'while' Expresion 'do' Instruccion                   { result = Iteracion_Indet::new(val[1], val[3])          }
                ;
           Casos: Caso                                                 { result = [val[0]]                                      }
-               | Casos ';' Caso                                       { result = val[0] + [val[2]]                             }
+               | Casos Caso                                           { result = val[0] + [val[1]]                             }
                ;
-           Caso: Expresion '->' Instruccion                           { result = Caso::new(val[0], val[2])                     }
+           Caso: Expresion '->' Instruccion ';'                       { result = Caso::new(val[0], val[2])                     }
                ;
   Declaraciones: 'declare' LDeclaraciones                             { result = Declaraciones::new(val[1])                    }
                |                                                      { result = Declaraciones::new([])                        }
@@ -134,8 +134,8 @@ ElementosSalida: ElementoSalida                                       { result =
                | 'rtoi'   '(' Expresion ')'                           { result = Funcion_Rtoi::new(val[2])                     }
                | 'top'    '(' Expresion ')'                           { result = Funcion_Top::new(val[2])                      }
                | Expresion '%'   Expresion                            { result = Modulo::new(val[0], val[2])                   }
-               | Expresion '*'   Expresion                            { result = Multiplicacion::new(val[0], val[2])           }
-               | Expresion '+'   Expresion                            { result = Suma::new(val[0], val[2])                     }
+               | Expresion '*'   Expresion                            { result = Por::new(val[0], val[2])                      }
+               | Expresion '+'   Expresion                            { result = Mas::new(val[0], val[2])                      }
                | Expresion '-'   Expresion                            { result = Resta::new(val[0], val[2])                    }
                | Expresion '..'  Expresion                            { result = Construccion::new(val[0], val[2])             }
                | Expresion '/'   Expresion                            { result = Division::new(val[0], val[2])                 }
