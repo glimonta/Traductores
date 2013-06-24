@@ -3,10 +3,22 @@
 
 require 'Token'
 
+class LexerException < RuntimeError
+  attr_reader :lexer
+
+  def initialize(lexer)
+    @lexer = lexer
+  end
+end
+
 # Clase Lexer que guarda la lista de tokens reconodicos, errores encontrados
 # de cierta entrada y la posicion actual (fila, columna)
 class Lexer
   attr_reader :tokens, :errores
+
+  def to_exception
+    LexerException::new self
+  end
 
   # Se encarga de inicializar el lexer en el string de entrada dado.
   def initialize(entrada)

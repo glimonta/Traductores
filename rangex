@@ -5,6 +5,7 @@
 
 require 'Lexer'
 require 'Parser'
+require 'SymTable'
 
 # En el main se llama a los metodos declarados anteriormente
 def main
@@ -16,11 +17,18 @@ def main
   begin
     # Creamos el ast
     ast = Parser::new.parse(Lexer::new entrada)
-    # Si no es nil, es porque no hubo errores lexicográficos
-    # de modo que imprimimos el ast, si ast es nil es porque
-    # hubo errores lexicográficos por lo que no imprimiriamos
-    # el ast.
-    if (nil != ast) then puts ast end
+    ast.check
+    puts ast
+  rescue LexerException => l
+    puts l.lexer
+  rescue RedefinirError => r
+    puts r
+  rescue UpdateError => s
+    puts s
+  rescue DeleteError => d
+    puts d
+  rescue ContextError => f
+    puts f
   rescue ErrorSintactico => e
     puts e
   end

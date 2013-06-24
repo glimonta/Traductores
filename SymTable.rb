@@ -1,3 +1,34 @@
+class RedefinirError < RuntimeError
+  def initialize(token)
+    @token = token
+  end
+
+  def to_s
+    "Error en línea #{@token.linea}, columna #{@token.columna}: no se puede usar la variable '#{@token.texto}' ya ha sido declarada."
+  end
+end
+
+class UpdateError < RuntimeError
+  def initialize(token)
+    @token = token
+  end
+
+  def to_s
+    "Error no se puede actualizar el token '#{@token.texto}'"
+  end
+end
+
+class DeleteError < RuntimeError
+  def initialize(token)
+    @token = token
+  end
+
+  def to_s
+    "Error no se puede eliminar el token '#{@token.texto}'"
+  end
+end
+
+
 class SymTable
   def initialize(padre = nil)
     @padre = padre
@@ -5,23 +36,23 @@ class SymTable
     @nombres = []
   end
 
-  def insert(nombre, tipo, es_mutable = true)
-    raise "BU!" if @tabla.has_key?(nombre)
-    @tabla[nombre] = { :tipo => tipo, :es_mutable => es_mutable }
-    @nombres << nombre
+  def insert(token, tipo, es_mutable = true)
+    raise RedefinirError::new token if @tabla.has_key?(token.texto)
+    @tabla[token.texto] = { :tipo => tipo, :es_mutable => es_mutable, :token => token }
+    @nombres << token.texto
     self
   end
 
   def delete(nombre)
-    raise "BUBU!" unless @tabla.has_key?(nombre)
+    raise DeleteError::new token unless @tabla.has_key?(nombre)
     @tabla.delete(nombre)
     @nombres.delete(nombre)
     self
   end
 
-  def update(nombre, tipo, es_mutable)
-    raise "BUBUBU!" unless @tabla.has_key?(nombre)
-    @tabla[nombre] = { :tipo => tipo, :es_mutable => es_mutable }
+  def update(token, tipo, es_mutable)
+    raise UpdateError::new token unless @tabla.has_key?(token.texto)
+    @tabla[token.texto] = { :tipo => tipo, :es_mutable => es_mutable, :token => token }
     self
   end
 

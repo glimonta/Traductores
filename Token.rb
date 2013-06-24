@@ -1,6 +1,8 @@
 #Gabriela Limonta 10-10385
 #John Delgado 10-10196
 
+require 'Type'
+
 # Un objeto de texto es una generalización de un fragmento textual en una posición
 # determinada de un texto. Instancias de esta idea son los errores lexicográficos y los tokens.
 class ObjetoDeTexto
@@ -158,3 +160,7 @@ class Array
     end
   end
 end
+
+class TkInt  ; def to_type; Rangex::Int  ; end; end
+class TkBool ; def to_type; Rangex::Bool ; end; end
+class TkRange; def to_type; Rangex::Range; end; end

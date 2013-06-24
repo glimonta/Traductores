@@ -1,6 +1,99 @@
 #Gabriela Limonta 10-10385
 #John Delgado 10-10196
 
+require 'Type'
+require 'SymTable'
+
+class ContextError < RuntimeError
+end
+
+class NoSonRangeNiEnteros < ContextError
+  def initialize(token, token2)
+     @token = token
+     @token2 = token2
+  end
+
+  def to_s
+    "Las variables '#{@token2.texto}' y '#{@token.texto}', en la linea #{@token.linea}, no son del mismo tipo"
+  end
+end
+
+class NoSonRange < ContextError
+  def initialize(token, token2)
+     @token = token
+     @token2 = token2
+  end
+
+  def to_s
+    "Las variables '#{@token2.texto}' y '#{@token.texto}', en la linea #{@token.linea}, no son del tipo range"
+  end
+end
+
+class NoSonBool < ContextError
+  def initialize(token, token2)
+     @token = token
+     @token2 = token2
+  end
+
+  def to_s
+    "Las variables '#{@token2.texto}' y '#{@token.texto}', en la linea #{@token.linea}, no son del tipo bool"
+  end
+end
+
+class NoSonEnteros < ContextError
+  def initialize(token, token2)
+     @token = token
+     @token2 = token2
+  end
+
+  def to_s
+    "Las variables '#{@token2.texto}' y '#{@token.texto}', en la linea #{@token.linea}, no son del tipo int"
+  end
+end
+
+class ErrorIteracion_I < ContextError
+   def to_s
+     "El tipo de expresion no es un booleano"
+   end
+end
+
+class ErrorIteracion_D < ContextError
+   def to_s
+     "El tipo de rango no es un range"
+   end
+end
+
+class NoEsInt < ContextError
+  def initialize(token)
+    @token = token
+  end
+
+  def to_s
+    "La variable '#{@token.texto}', no es del tipo int"
+  end
+end
+
+class NoEsBool < ContextError
+  def initialize(token)
+    @token = token
+  end
+
+  def to_s
+    "La variable '#{@token.texto}', no es del tipo bool"
+  end
+end
+
+class NoEsRange < ContextError
+  def initialize(token)
+    @token = token
+  end
+
+  def to_s
+    "La variable '#{@token.texto}', no es del tipo range"
+  end
+end
+
+
 # Se encarga de crear una nueva clase dada la superclase,
 # el nombre de la nueva clase y los atributos que tendrá
 # la misma.
@@ -27,12 +120,9 @@ def generaClase(superclase, nombre, atributos)
     end
 
     def method_missing(nombre, *argumentos)
-      par = @hijos.map {|nombre, contenido| [nombre.sub(/\A[.-]/, ''), contenido] }.assoc(nombre.gsub(/_/, ' '))
-      if par.nil? then
-        raise NoMethodError::new("undefined method `#{nombre}' for #{self.name}")
-      else
-        par[1]
-      end
+      par = @hijos.map {|nombre_, contenido| [nombre_.sub(/\A[.-]/, ''), contenido] }.assoc(nombre.to_s.gsub(/_/, ' '))
+      raise NoMethodError::new("undefined method `#{nombre}' for #{self.class.name}") if par.nil?
+      par[1]
     end
   end
 
@@ -43,7 +133,6 @@ end
 # A continuación generamos todas las clases necesarias para cubrir el lenguaje.
 generaClase(Object, 'AST', [])
   generaClase(AST, 'Declaracion'  , ['variables', 'tipo'])
-  generaClase(AST, 'Declaraciones', ['declaraciones'])
   generaClase(AST, 'Programa'     , ['instruccion'])
   generaClase(AST, 'Caso'         , ['rango', 'instruccion'])
   generaClase(AST, 'Expresion'    , [])
@@ -75,7 +164,7 @@ generaClase(Object, 'AST', [])
     generaClase(Expresion, 'Funcion_Top'    , ['argumento'])
   generaClase(AST, 'Instruccion', [])
     generaClase(Instruccion, 'Asignacion'      , ['var', 'expresion'])
-    generaClase(Instruccion, 'Bloque'          , ['.declaraciones', '-instrucciones']) #TODO hay que arreglar lo del . y el - para el method_missing
+    generaClase(Instruccion, 'Bloque'          , ['declaraciones', '-instrucciones']) #TODO hay que arreglar lo del . y el - para el method_missing
     generaClase(Instruccion, 'Read'            , ['variable'])
     generaClase(Instruccion, 'Write'           , ['elementos'])
     generaClase(Instruccion, 'Writeln'         , ['elementos'])
@@ -146,7 +235,7 @@ class Modulo
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho
-    raise "Los tipos de las variables no son enteros" unless Rangex::Int == self.operando_derecho
+    raise NoSonEnteros::new unless Rangex::Int == self.operando_derecho
     @type = Rangex::Int
   end
 end
@@ -168,7 +257,7 @@ class Mas
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros o rangos" unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
     @type = self.operando_izquierdo.type
   end
 end
@@ -178,7 +267,7 @@ class Resta
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros" unless Rangex::Int == self.operando_derecho.type
+    raise NoSonEnteros::new unless Rangex::Int == self.operando_derecho.type
     @type = Rangex::Int
   end
 end
@@ -188,7 +277,7 @@ class Construccion
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros" unless Rangex::Int == self.operando_derecho.type
+    raise NoSonEnteros::new unless Rangex::Int == self.operando_derecho.type
     @type = Rangex::Range
   end
 end
@@ -198,7 +287,7 @@ class Division
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros" unless Rangex::Int == self.operando_derecho.type
+    raise NoSonEnteros::new unless Rangex::Int == self.operando_derecho.type
     @type = Rangex::Int
   end
 end
@@ -208,7 +297,7 @@ class Desigual
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros o rangos" unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
     @type = Rangex::Bool
   end
 end
@@ -218,7 +307,7 @@ class Menor_Que
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros o rangos" unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
     @type = Rangex::Bool
   end
 end
@@ -228,7 +317,7 @@ class Menor_Igual_Que
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros o rangos" unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
     @type = Rangex::Bool
   end
 end
@@ -238,7 +327,7 @@ class Interseccion
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son rangos" unless Rangex::Range == self.operando_derecho.type
+    raise NoSonRange unless Rangex::Range == self.operando_derecho.type
     @type = Rangex::Range
   end
 end
@@ -248,7 +337,7 @@ class Igual
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros o rangos" unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
     @type = Rangex::Bool
   end
 end
@@ -258,7 +347,7 @@ class Mayor_Que
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros o rangos" unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
     @type = Rangex::Bool
   end
 end
@@ -268,7 +357,7 @@ class Mayor_Igual_Que
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son enteros o rangos" unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
     @type = Rangex::Bool
   end
 end
@@ -276,9 +365,9 @@ end
 class Pertenece
   def check(tabla)
     self.operando_izquierdo.check(tabla)
-    raise "La variable izquierda no es un entero" unless Rangex::Int == self.operando_izquierdo.type
+    raise NoEsInt::new unless Rangex::Int == self.operando_izquierdo.type
     self.operando_derecho.check(tabla)
-    raise "La variable derecha no es un rango" unless Rangex::Range == self.operando_derecho.type
+    raise NoEsRange::new unless Rangex::Range == self.operando_derecho.type
     @type = Rangex::Bool
   end
 end
@@ -288,7 +377,7 @@ class And
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son booleanos" unless Rangex::Bool == self.operando_derecho.type
+    raise NoSonBool unless Rangex::Bool == self.operando_derecho.type
     @type = Rangex::Bool
   end
 end
@@ -298,7 +387,7 @@ class Or
     self.operando_izquierdo.check(tabla)
     self.operando_derecho.check(tabla)
     raise "Los tipos de las variables no concuerdan" unless self.operando_izquierdo.type == self.operando_derecho.type
-    raise "Los tipos de las variables no son booleanos" unless Rangex::Bool == self.operando_derecho.type
+    raise NoSonBool::new unless Rangex::Bool == self.operando_derecho.type
     @type = Rangex::Bool
   end
 end
@@ -306,7 +395,7 @@ end
 class Not
   def check(tabla)
     self.operando.check(tabla)
-    raise "El tipo de la variable no es booleano" unless Rangex::Bool == self.operando.type
+    raise NoEsBool::new unless Rangex::Bool == self.operando.type
     @type = Rangex::Bool
   end
 end
@@ -314,7 +403,7 @@ end
 class Menos_Unario
   def check(tabla)
     self.operando.check(tabla)
-    raise "El tipo de la variable no es entero" unless Rangex::Int == self.operando.type
+    raise NoEsInt::new unless Rangex::Int == self.operando.type
     @type = Rangex::Int
   end
 end
@@ -339,18 +428,16 @@ end
 
 class Variable
   def check(tabla)
-    variable = tabla.find(self.nombre)
-    if variable.is_nil? then
-      raise "La variable no está declarada"
-    else
-      @type = variable[tipo]
+    variable = tabla.find(self.nombre.texto)
+    raise "La variable #{self.nombre} no está declarada" if variable.nil?
+    @type = variable[:tipo]
   end
 end
 
 class Funcion_Bottom
   def check(tabla)
     self.argumento.check(tabla)
-    raise "El tipo de la variable no es un rango" unless Rangex::Range == self.argumento.type
+    raise NoEsRange::new unless Rangex::Range == self.argumento.type
     @type = Rangex::Int
   end
 end
@@ -358,7 +445,7 @@ end
 class Funcion_Length
   def check(tabla)
     self.argumento.check(tabla)
-    raise "El tipo de la variable no es un rango" unless Rangex::Range == self.argumento.type
+    raise NoEsRange::new unless Rangex::Range == self.argumento.type
     @type = Rangex::Int
   end
 end
@@ -366,7 +453,7 @@ end
 class Funcion_Length
   def check(tabla)
     self.argumento.check(tabla)
-    raise "El tipo de la variable no es un rango" unless Rangex::Range == self.argumento.type
+    raise NoEsRange::new unless Rangex::Range == self.argumento.type
     @type = Rangex::Int
   end
 end
@@ -374,18 +461,20 @@ end
 class Funcion
   def check(tabla)
     self.argumento.check(tabla)
-    raise "El tipo de la variable no es un rango" unless Rangex::Range == self.argumento.type
+    raise NoEsRange::new unless Rangex::Range == self.argumento.type
     @type = Rangex::Int
   end
 end
 
 class Asignacion
   def check(tabla)
-    variable = tabla.find(self.var)
-    raise "Se modifica una variable no mutable" unless variable[es_mutable]
+    variable = tabla.find(self.var.texto)
+    raise "La variable #{self.var} no existe" if variable.nil?
+
+    raise "Se modifica una variable no mutable" unless variable[:es_mutable]
 
     self.expresion.check(tabla)
-    raise "El tipo de la variable no concuerda" unless variable[tipo] == self.expresion.type
+    raise "El tipo de la variable no concuerda" unless variable[:tipo] == self.expresion.type
   end
 end
 
@@ -393,7 +482,7 @@ class Bloque
   def check(tabla)
     tabla2 = self.declaraciones.inject(SymTable::new(tabla)) do |acum, declaracion|
       declaracion.variables.inject(acum) do |acum2, variable|
-        acum2.insert(variable, declaracion.tipo)
+        acum2.insert(variable, declaracion.tipo.to_type)
       end
     end
 
@@ -405,8 +494,9 @@ end
 
 class Read
   def check(tabla)
-    variable = tabla.find(self.variable)
-    raise "Se modifica una variable no mutable" unless variable[es_mutable]
+    variable = tabla.find(self.variable.texto)
+    raise "La variable #{self.variable} no está declarada" if variable.nil?
+    raise "Se modifica una variable no mutable" unless variable[:es_mutable]
   end
 end
 
@@ -429,7 +519,7 @@ end
 class Condicional_Else
   def check(tabla)
     self.condicion.check(tabla)
-    raise "El tipo de expresion no es booleano" unless Rangex::Bool == self.condicion.type
+    raise NoEsBool:: new unless Rangex::Bool == self.condicion.type
 
     self.verdadero.check(tabla)
     self.falso.check(tabla)
@@ -439,7 +529,7 @@ end
 class Condicional_If
   def check(tabla)
     self.condicion.check(tabla)
-    raise "El tipo de expresion no es booleano" unless Rangex::Bool == self.condicion.type
+    raise NoEsBool::new unless Rangex::Bool == self.condicion.type
 
     self.verdadero.check(tabla)
   end
@@ -448,7 +538,7 @@ end
 class Case
   def check(tabla)
     self.exp.check(tabla)
-    raise "El tipo de expresion no es un entero" unless Rangex::Int == self.condicion.type
+    raise NoEsInt::new unless Rangex::Int == self.condicion.type
 
     self.casos.each do |caso|
       caso.check(tabla) unless caso.is_a?(TkString)
@@ -459,8 +549,8 @@ end
 class Iteracion_Det
   def check(tabla)
     self.rango.check(tabla)
-    raise "El tipo del rango no es range" unless Rangex::Range == self.rango.type
-    tabla2 = tabla::new(tabla).insert(self.variable, Rangex::Int, false)
+    raise ErrorIteracion_D::new unless Rangex::Range == self.rango.type
+    tabla2 = SymTable::new(tabla).insert(self.variable, Rangex::Int, false)
     self.instruccion.check(tabla2)
   end
 end
@@ -468,10 +558,8 @@ end
 class Iteracion_Indet
   def check(tabla)
     self.condicion.check(tabla)
-    raise "El tipo de expresion no es booleano" unless Rangex::Bool == self.condicion.type
+    raise ErrorIteracion_I::new unless Rangex::Bool == self.condicion.type
 
     self.instruccion.check(tabla)
   end
-end
-
 end

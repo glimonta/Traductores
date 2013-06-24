@@ -101,11 +101,8 @@ rule
                ;
            Caso: Expresion '->' Instruccion ';'                       { result = Caso::new(val[0], val[2])                     }
                ;
-  Declaraciones: 'declare' LDeclaraciones                             { result = Declaraciones::new(val[1])                    }
-               |                                                      { result = Declaraciones::new([])                        }
-               ;
- LDeclaraciones: Declaracion                                          { result = [val[0]]                                      }
-               | LDeclaraciones ';' Declaracion                       { result = val[0] + [val[2]]                             }
+  Declaraciones: 'declare' Declaracion                                { result = [val[1]]                                      }
+               | Declaraciones ';' Declaracion                        { result = val[0] + [val[2]]                             }
                ;
     Declaracion: Variables 'as' Tipo                                  { result = Declaracion::new(val[0], val[2])              }
                ;
@@ -210,8 +207,8 @@ end
           rescue ErrorLexicografico => error
           end
         end
-        # Finalmente se imprime el lexer
-        puts lexer
+        # Finalmente se tira una excepcion con el lexer que ya ha sido llenado con todos los errores lexicográficos
+        raise lexer.to_exception
       end
       # Se retorna el AST
       return ast
