@@ -2,6 +2,7 @@
 #John Delgado 10-10196
 
 require 'Token'
+require 'Ubicacion'
 
 class LexerException < RuntimeError
   attr_reader :lexer

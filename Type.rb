@@ -5,7 +5,8 @@ module Rangex
     end
   end
 
-  class Int   < Type; end
-  class Bool  < Type; end
-  class Range < Type; end
+  class Int       < Type; end
+  class Bool      < Type; end
+  class Range     < Type; end
+  class TypeError < Type; end
 end

@@ -1,21 +1,12 @@
 #Gabriela Limonta 10-10385
 #John Delgado 10-10196
+module Rangex; end
 
 require 'Type'
 require 'SymTable'
+require 'Ubicacion'
 
 class ContextError < RuntimeError
-end
-
-class NoConcuerdaEspecial < ContextError
-  def initialize(izquierdo, operador)
-    @izquierdo = izquierdo
-    @operador = operador
-  end
-
-  def to_s
-    "Error en la línea #{@izquierdo.linea}, columna #{@izquierdo.columna}: intento de '#{@operador.texto}' la variable '#{@izquierdo.texto}' es del tipo '#{@izquierdo.type}'."
-  end
 end
 
 class NoConcuerdan < ContextError
@@ -61,39 +52,6 @@ class NoSonRangeNiEnteros < ContextError
   end
 end
 
-class NoSonRange < ContextError
-  def initialize(token, token2)
-     @token = token
-     @token2 = token2
-  end
-
-  def to_s
-    "Las variables '#{@token2.texto}' y '#{@token.texto}', en la linea #{@token.linea}, no son del tipo range"
-  end
-end
-
-class NoSonBool < ContextError
-  def initialize(token, token2)
-     @token = token
-     @token2 = token2
-  end
-
-  def to_s
-    "Las variables '#{@token2.texto}' y '#{@token.texto}', en la linea #{@token.linea}, no son del tipo bool"
-  end
-end
-
-class NoSonEnteros < ContextError
-  def initialize(token, token2)
-     @token = token
-     @token2 = token2
-  end
-
-  def to_s
-    "Las variables '#{@token2.texto}' y '#{@token.texto}', en la linea #{@token.linea}, no son del tipo int"
-  end
-end
-
 class ErrorIteracion_I < ContextError
    def to_s
      "El tipo de expresion no es un booleano"
@@ -112,7 +70,7 @@ class NoEsInt < ContextError
   end
 
   def to_s
-    "La variable '#{@token.texto}', no es del tipo int"
+    "Error en la línea #{@token.linea}, columna #{@token.columna}: La variable '#{@token.texto}', no es del tipo int"
   end
 end
 
@@ -122,7 +80,7 @@ class NoEsBool < ContextError
   end
 
   def to_s
-    "La variable '#{@token.texto}', no es del tipo bool"
+    "Error en la línea #{@token.linea}, columna #{@token.columna}: La variable '#{@token.texto}', no es del tipo bool"
   end
 end
 
@@ -160,6 +118,9 @@ def generaClase(superclase, nombre, atributos)
 
       # En hijos se tendrá un arreglo que contiene pares de nombres de atributos y su valor correspondiente.
       @hijos = [self.class.atributos, argumentos].transpose
+
+      @inicio = nil
+      @final = nil
     end
 
     def method_missing(nombre, *argumentos)
@@ -219,6 +180,18 @@ generaClase(Object, 'AST', [])
 
 # Modificamos la clase AST para agregarle el to_s y to_string
 class AST
+  attr_reader :inicio, :final
+
+  def set_inicio(i)
+    @inicio = i
+    self
+  end
+
+  def set_final(f)
+    @final = f
+    self
+  end
+
   # Se encarga de pasar a string el AST llamando a to_string con profundidad cero
   # y eliminando cualquier salto de línea del inicio y cualquier cantidad de
   # espacios en blancos.
@@ -266,6 +239,7 @@ class Programa
 
   def check
     self.instruccion.check(SymTable::new)
+    @final = self.instruccion.final
   end
 end
 
@@ -276,26 +250,46 @@ end
 class Modulo
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Modulo", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Modulo", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Modulo", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonEnteros::new unless Rangex::Int == self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion modulo entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if Rangex::Int != self.operando_derecho.type then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion modulo entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Int
+  end
+end
+
+class Caso
+  def check(tabla)
+    self.rango.check(tabla)
+    if Rangex::Range != self.rango.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el rango del caso es del tipo \"#{self.rango.type}\" en vez de range"
+    end
+    @inicio = self.rango.inicio
+    self.instruccion.check(tabla)
   end
 end
 
 class Por
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
+    @final = self.operando_derecho.final
     case [self.operando_izquierdo.type, self.operando_derecho.type]
       when [Rangex::Int  , Rangex::Int] then @type = Rangex::Int
       when [Rangex::Range, Rangex::Int] then @type = Rangex::Range
       else
-        raise NoConcuerdan::new self.operando_izquierdo.nombre, "Multiplicacion", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable)
-        raise NoConcuerdan::new self.operando_izquierdo.valor , "Multiplicacion", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable)
-        raise NoConcuerdan::new self.operando_izquierdo.nombre, "Multiplicacion", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero)
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer una operacion con \"por\" entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
     end
   end
 end
@@ -303,17 +297,18 @@ end
 class Mas
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    if Rangex::Range == self.operando_izquierdo.type then
-      raise NoConcuerdan::new self.operando_izquierdo.nombre, "Union", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-      raise NoConcuerdan::new self.operando_izquierdo.valor , "Union", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-      raise NoConcuerdan::new self.operando_izquierdo.nombre, "Union", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if self.operando_derecho.type != self.operando_izquierdo.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mas entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
     else
-      raise NoConcuerdan::new self.operando_izquierdo.nombre, "Suma", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-      raise NoConcuerdan::new self.operando_izquierdo.valor , "Suma", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-      raise NoConcuerdan::new self.operando_izquierdo.nombre, "Suma", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
+      if !([Rangex::Int, Rangex::Range].include?(self.operando_izquierdo.type)) then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mas entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
     end
-    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
     @type = self.operando_izquierdo.type
   end
 end
@@ -321,11 +316,18 @@ end
 class Resta
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Resta", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Resta", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Resta", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonEnteros::new unless Rangex::Int == self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion resta entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if Rangex::Int != self.operando_derecho.type then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion resta entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Int
   end
 end
@@ -333,11 +335,18 @@ end
 class Construccion
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Construccion", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Construccion", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Construccion", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonEnteros::new unless Rangex::Int == self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion construccion entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if Rangex::Int != self.operando_derecho.type then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion construccion entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Range
   end
 end
@@ -345,11 +354,18 @@ end
 class Division
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Division", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Division", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Division", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonEnteros::new unless Rangex::Int == self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion division entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if Rangex::Int != self.operando_derecho.type then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion division entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Int
   end
 end
@@ -357,11 +373,18 @@ end
 class Desigual
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Desigual", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Desigual", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Desigual", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion desigual entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion desigual entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Bool
   end
 end
@@ -369,11 +392,18 @@ end
 class Menor_Que
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Menor que", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Menor que", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Menor que", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menor que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menor que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Bool
   end
 end
@@ -381,11 +411,18 @@ end
 class Menor_Igual_Que
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Menor o igual que", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Menor o igual que", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Menor o igual que", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menor o igual que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menor o igual que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Bool
   end
 end
@@ -393,11 +430,18 @@ end
 class Interseccion
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Interseccion", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Interseccion", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Interseccion", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonRange::new unless Rangex::Range == self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion interseccion entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if Rangex::Range != self.operando_derecho.type then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion interseccion entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Range
   end
 end
@@ -405,11 +449,18 @@ end
 class Igual
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Igual", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Igual", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Igual", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion igual entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion igual entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Bool
   end
 end
@@ -417,11 +468,18 @@ end
 class Mayor_Que
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Mayor que", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Mayor que", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Mayor que", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mayor que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mayor que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Bool
   end
 end
@@ -429,11 +487,18 @@ end
 class Mayor_Igual_Que
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Mayor o igual que", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Mayor o igual que", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Entero) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Mayor o igual que", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Entero) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonRangeNiEnteros::new unless [Rangex::Int, Rangex::Range].include?(self.operando_derecho.type)
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mayor o igual que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mayor o igual que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Bool
   end
 end
@@ -441,9 +506,17 @@ end
 class Pertenece
   def check(tabla)
     self.operando_izquierdo.check(tabla)
-    raise NoEsInt::new unless Rangex::Int == self.operando_izquierdo.type
+    @inicio = self.operando_izquierdo.inicio
+    if Rangex::Int != self.operando_izquierdo.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion pertenece entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    end
     self.operando_derecho.check(tabla)
-    raise NoEsRange::new unless Rangex::Range == self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if Rangex::Range != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion pertenece entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    end
     @type = Rangex::Bool
   end
 end
@@ -451,11 +524,18 @@ end
 class And
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "And", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "And", self.operando_derecho.nombre if (self.operando_izquierdo.instance_of?(True) or self.operando_izquierdo.instance_of?(False)) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "And", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and (self.operando_izquierdo.instance_of?(True) or self.operando_izquierdo.instance_of?(False)) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonBool unless Rangex::Bool == self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion and entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if Rangex::Bool != self.operando_derecho.type then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion and entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Bool
   end
 end
@@ -463,11 +543,18 @@ end
 class Or
   def check(tabla)
     self.operando_izquierdo.check(tabla)
+    @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Or", self.operando_derecho.nombre if self.operando_izquierdo.instance_of?(Variable) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.valor , "Or", self.operando_derecho.nombre if (self.operando_izquierdo.instance_of?(True) or self.operando_izquierdo.instance_of?(False)) and self.operando_derecho.instance_of?(Variable) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoConcuerdan::new self.operando_izquierdo.nombre, "Or", self.operando_derecho.valor if self.operando_izquierdo.instance_of?(Variable) and (self.operando_izquierdo.instance_of?(True) or self.operando_izquierdo.instance_of?(False)) and self.operando_izquierdo.type != self.operando_derecho.type
-    raise NoSonBool::new unless Rangex::Bool == self.operando_derecho.type
+    @final = self.operando_derecho.final
+    if self.operando_izquierdo.type != self.operando_derecho.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion or entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+    else
+      if Rangex::Bool != self.operando_derecho.type then
+        @type = Rangex::TypeError
+        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion or entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
+      end
+    end
     @type = Rangex::Bool
   end
 end
@@ -475,7 +562,11 @@ end
 class Not
   def check(tabla)
     self.operando.check(tabla)
-    raise NoEsBool::new unless Rangex::Bool == self.operando.type
+    @final = self.operando.final
+    if Rangex::Bool != self.operando.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion not a un operando de tipo \"#{self.operando.type}\""
+    end
     @type = Rangex::Bool
   end
 end
@@ -483,7 +574,11 @@ end
 class Menos_Unario
   def check(tabla)
     self.operando.check(tabla)
-    raise NoEsInt::new unless Rangex::Int == self.operando.type
+    @final = self.operando_derecho.final
+    if Rangex::Int != self.operando.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menos unario a un operando de tipo \"#{self.operando.type}\""
+    end
     @type = Rangex::Int
   end
 end
@@ -509,7 +604,8 @@ end
 class Variable
   def check(tabla)
     variable = tabla.find(self.nombre.texto)
-    raise NoDeclarada::new self.nombre if variable.nil?
+    @type = Rangex::TypeError
+    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la variable \"#{self.nombre.texto}\" no se encuentra declarada" if variable.nil?
     @type = variable[:tipo]
   end
 end
@@ -517,7 +613,8 @@ end
 class Funcion_Bottom
   def check(tabla)
     self.argumento.check(tabla)
-    raise NoEsRange::new unless Rangex::Range == self.argumento.type
+    @type = Rangex::TypeError
+    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la funcion bottom es de tipo \"#{self.argumento.type}\"" unless Rangex::Range == self.argumento.type
     @type = Rangex::Int
   end
 end
@@ -525,23 +622,26 @@ end
 class Funcion_Length
   def check(tabla)
     self.argumento.check(tabla)
-    raise NoEsRange::new unless Rangex::Range == self.argumento.type
+    @type = Rangex::TypeError
+    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la funcion length es de tipo \"#{self.argumento.type}\"" unless Rangex::Range == self.argumento.type
     @type = Rangex::Int
   end
 end
 
-class Funcion_Length
+class Funcion_Top
   def check(tabla)
     self.argumento.check(tabla)
-    raise NoEsRange::new unless Rangex::Range == self.argumento.type
+    @type = Rangex::TypeError
+    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la funcion top es de tipo \"#{self.argumento.type}\"" unless Rangex::Range == self.argumento.type
     @type = Rangex::Int
   end
 end
 
-class Funcion
+class Funcion_Rtoi
   def check(tabla)
     self.argumento.check(tabla)
-    raise NoEsRange::new unless Rangex::Range == self.argumento.type
+    @type = Rangex::TypeError
+    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la funcion rtoi es de tipo \"#{self.argumento.type}\"" unless Rangex::Range == self.argumento.type
     @type = Rangex::Int
   end
 end
@@ -549,12 +649,20 @@ end
 class Asignacion
   def check(tabla)
     variable = tabla.find(self.var.texto)
-    raise NoDeclarada::new self.var if variable.nil?
+    if variable.nil? then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la variable \"#{self.var.texto}\" no ha sido declarada"
+    end
 
-    raise NoMutable::new self.var unless variable[:es_mutable]
+    @type = Rangex::TypeError
+    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta modificar la variable \"#{self.var.texto}\" que pertenece a una iteración" unless variable[:es_mutable]
 
     self.expresion.check(tabla)
-    raise NoConcuerdaEspecial::new self.var self.expresion unless variable[:tipo] == self.expresion.type
+    @final = self.expresion.final
+    if variable[:tipo] != self.expresion.type then
+      @type = Rangex::TypeError
+      raise  "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta asignar algo del tipo \"#{self.expresion.type}\" a la variable \"#{self.var.texto}\" de tipo \"#{self.var.type}\""
+    end
   end
 end
 
@@ -575,8 +683,12 @@ end
 class Read
   def check(tabla)
     variable = tabla.find(self.variable.texto)
-    raise NoDeclarada::new self.variable if variable.nil?
-    raise NoMutable::new self.varible unless variable[:es_mutable]
+    if variable.nil? then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la variable \"#{self.var.texto}\" no ha sido declarada"
+    end
+    @type = Rangex::TypeError
+    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta modificar la variable \"#{self.var.texto}\" que pertenece a una iteración" unless variable[:es_mutable]
   end
 end
 
@@ -585,6 +697,7 @@ class Write
     self.elementos.each do |elemento|
       elemento.check(tabla) unless elemento.is_a?(TkString)
     end
+    @final = self.elementos.final
   end
 end
 
@@ -594,31 +707,43 @@ class Writeln
       elemento.check(tabla) unless elemento.is_a?(TkString)
     end
   end
+  #@final = self.elementos.final
 end
 
 class Condicional_Else
   def check(tabla)
     self.condicion.check(tabla)
-    raise NoEsBool:: new unless Rangex::Bool == self.condicion.type
+    if Rangex::Bool != self.condicion.type then
+        raise NoEsBool::new self.condicion.nombre if self.condicion.instance_of?(Variable)
+        raise NoEsBool::new self.condicion.valor  if (self.condicion.instance_of?(True) or self.condicion.instance_of?(False))
+    end
 
     self.verdadero.check(tabla)
     self.falso.check(tabla)
+    @final = self.falso.final
   end
 end
 
 class Condicional_If
   def check(tabla)
     self.condicion.check(tabla)
-    raise NoEsBool::new self.condicion unless Rangex::Bool == self.condicion.type
+    if Rangex::Bool != self.condicion.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la condicion de la iteracion es de tipo \"#{self.condicion.type}\""
+    end
 
     self.verdadero.check(tabla)
+    @final = self.verdadero.final
   end
 end
 
 class Case
   def check(tabla)
     self.exp.check(tabla)
-    raise NoEsInt::new self.condicion unless Rangex::Int == self.condicion.type
+    if Rangex::Int != self.exp.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la expresión del case es de tipo \"#{self.condicion.type}\""
+    end
 
     self.casos.each do |caso|
       caso.check(tabla) unless caso.is_a?(TkString)
@@ -629,17 +754,25 @@ end
 class Iteracion_Det
   def check(tabla)
     self.rango.check(tabla)
-    raise ErrorIteracion_D::new unless Rangex::Range == self.rango.type
+    if Rangex::Range != self.rango.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el rango de la iteración es de tipo \"#{self.condicion.type}\""
+    end
     tabla2 = SymTable::new(tabla).insert(self.variable, Rangex::Int, false)
     self.instruccion.check(tabla2)
+    @final = self.instruccion.final
   end
 end
 
 class Iteracion_Indet
   def check(tabla)
     self.condicion.check(tabla)
-    raise ErrorIteracion_I::new unless Rangex::Bool == self.condicion.type
+    if Rangex::Bool != self.condicion.type then
+      @type = Rangex::TypeError
+      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la condicion de la iteración es de tipo \"#{self.condicion.type}\""
+    end
 
     self.instruccion.check(tabla)
+    @final = self.instruccion.final
   end
 end

@@ -2,11 +2,29 @@
 #John Delgado 10-10196
 
 require 'Type'
+require 'Ubicacion'
 
 # Un objeto de texto es una generalización de un fragmento textual en una posición
 # determinada de un texto. Instancias de esta idea son los errores lexicográficos y los tokens.
 class ObjetoDeTexto
   attr_accessor :linea, :columna, :texto
+
+  def inicio
+    Ubicacion::new(@linea, @columna)
+  end
+
+  def final
+    return self.inicio if texto.length.zero?
+
+    lineas = (texto + ' ').lines.to_a.length.pred
+
+    if lineas.zero? then
+      Ubicacion::new(linea, columna + texto.length)
+    else
+      texto =~ /\n(.*)\z/
+      Ubicacion::new(linea + lineas, 1 + $1.lenght)
+    end
+  end
 end
 
 # Un error lexicográfico es un objeto que guarda la posición de un error en un contexto
@@ -158,6 +176,16 @@ class Array
     inject('') do |acum, objeto|
       acum + "\n" + '  '*profundidad + '- ' + objeto.to_string(profundidad.succ).sub(/\A[\n ]*/, '')
     end
+  end
+
+  def inicio
+    return nil if self.empty?
+    self.first.inicio
+  end
+
+  def final
+    return nil if self.empty?
+    self.last.final
   end
 end
 

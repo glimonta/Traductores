@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+module Rangex; end
 
 #Gabriela Limonta 10-10385
 #John Delgado 10-10196
@@ -9,6 +10,8 @@ require 'SymTable'
 
 # En el main se llama a los metodos declarados anteriormente
 def main
+  $ErroresContexto = []
+
   # Leemos la entrada del archivo
   entrada = File::read(ARGV[0])
 
@@ -27,8 +30,6 @@ def main
     puts s
   rescue DeleteError => d
     puts d
-  rescue ContextError => f
-    puts f
   rescue ErrorSintactico => e
     puts e
   end
