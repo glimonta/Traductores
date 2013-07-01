@@ -21,7 +21,11 @@ def main
     # Creamos el ast
     ast = Parser::new.parse(Lexer::new entrada)
     ast.check
-    puts ast
+    unless $ErroresContexto.empty?
+      puts $ErroresContexto
+    else
+      puts ast
+    end
   rescue LexerException => l
     puts l.lexer
   rescue RedefinirError => r

@@ -6,12 +6,13 @@
 
 #Error que permite ver al usuario que se trato de redefinir un simbolo en la tabla de simbolos cuando esto no es posible
 class RedefinirError < RuntimeError
-  def initialize(token)
+  def initialize(token, token_viejo)
     @token = token
+    @token_viejo = token_viejo
   end
 
   def to_s
-    "Error en línea #{@token.linea}, columna #{@token.columna}: no se puede usar la variable '#{@token.texto}' ya ha sido declarada."
+    "Error en línea #{@token.linea}, columna #{@token.columna}: la variable '#{@token.texto}' fue previamente declarada en la línea #{@token_viejo.linea}, columna #{@token_viejo.columna}."
   end
 end
 
@@ -51,7 +52,7 @@ class SymTable
   #metodo que permite insertar un simbolo a la tabla de simbolos, no se pueden redefinir simbolos al momento de
   #hacer una insercion por esto se chequea esta caracteristica primero
   def insert(token, tipo, es_mutable = true)
-    raise RedefinirError::new token if @tabla.has_key?(token.texto)
+    raise RedefinirError::new(token, @tabla[token.texto][:token]) if @tabla.has_key?(token.texto)
     @tabla[token.texto] = { :tipo => tipo, :es_mutable => es_mutable, :token => token }
     @nombres << token.texto
     self

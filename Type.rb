@@ -5,8 +5,22 @@
 #existen en Rangex
 module Rangex
   class Type
+    class << self
+      def to_s
+        name.sub(/Rangex::/, '')
+      end
+    end
+
     def ==(otro)
       otro.class == self.class
+    end
+
+    def to_s
+      self.class.name
+    end
+
+    def inspect
+      to_s
     end
   end
 

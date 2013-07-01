@@ -9,46 +9,141 @@ require 'Ubicacion'
 class ContextError < RuntimeError
 end
 
-class NoConcuerdan < ContextError
-  def initialize(izquierdo, operador, derecho)
-    @izquierdo = izquierdo
-    @derecho = derecho
-    @operador = operador
+class ErrorDeTipo < ContextError
+  def initialize(inicio, final, operacion, tipo_izq, tipo_der)
+    @inicio = inicio
+    @final = final
+    @operacion = operacion
+    @tipo_izq = tipo_izq
+    @tipo_der = tipo_der
   end
 
   def to_s
-    "Error en la línea #{@izquierdo.linea}, columna #{@izquierdo.columna}: intento de '#{@operador}' la variable '#{@izquierdo.texto}' del tipo '#{@izquierdo.class}' y la variable '#{@derecho.texto}' del tipo '#{@derecho.class}'."
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion #{@operacion} entre operandos de tipos \"#{@tipo_izq}\" y \"#{@tipo_der}\""
   end
 end
 
-class NoMutable < ContextError
-  def initialize(token)
-    @token = token
+class ErrorDeTipoUnario < ContextError
+  def initialize(incio, final, operacion, tipo)
+    @inicio = inicio
+    @final = final
+    @operacion = operacion
+    @tipo = tipo
   end
 
   def to_s
-    "Error en línea #{@token.linea}, columna #{@token.columna}: se intenta modificar la variable '#{@token.texto}' la cual pertenece a una iteracion"
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion #{@operacion} a un operando de tipo \"#{@tipo}\""
   end
 end
 
 class NoDeclarada < ContextError
-  def initialize(token)
-    @token = token
+  def initialize(inicio, final, nombre)
+    @inicio = inicio
+    @final = final
+    @nombre = nombre
   end
 
   def to_s
-    "Error en línea #{@token.linea}, columna #{@token.columna}: no puede usar la variable '#{token.texto}' pues no ha sido declarada"
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la variable \"#{@nombre}\" no se encuentra declarada"
   end
 end
 
-class NoSonRangeNiEnteros < ContextError
-  def initialize(token, token2)
-     @token = token
-     @token2 = token2
+class ErrorDeTipoFuncion < ContextError
+  def initialize(inicio, final, nombre_funcion,tipo)
+    @inicio = inicio
+    @final = final
+    @nombre_funcion = nombre_funcion
+    @tipo = tipo
   end
 
   def to_s
-    "Las variables '#{@token2.texto}' y '#{@token.texto}', en la linea #{@token.linea}, no son del mismo tipo"
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la #{@nombre_funcion} es de tipo \"#{@tipo}\" y se esperaba tipo \"Range\""
+  end
+end
+
+class ErrorModificarIteracion < ContextError
+  def initialize(inicio, final, nombre)
+    @inicio = inicio
+    @final = final
+    @nombre = nombre
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta modificar la variable \"#{@nombre}\" que pertenece a una iteración"
+  end
+end
+
+class ErrorDeTipoAsignacion < ContextError
+  def initialize(inicio, final, tipo_asig, nombre, tipo_var)
+    @inicio = inicio
+    @final = final
+    @tipo_asig = tipo_asig
+    @nombre = nombre
+    @tipo_var = tipo_var
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta asignar algo del tipo \"#{@tipo_asig}\" a la variable \"#{@nombre}\" de tipo \"#{@tipo_var}\""
+  end
+end
+
+class ErrorCondicionCondicional < ContextError
+  def initialize(inicio, final, tipo)
+    @inicio = inicio
+    @final = final
+    @tipo = tipo
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la condición es de tipo \"#{@tipo}\""
+  end
+end
+
+class ErrorExpresionCase < ContextError
+  def initialize(inicio, final, tipo)
+    @inicio = inicio
+    @final = final
+    @tipo = tipo
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la expresión del case es de tipo \"#{@tipo}\""
+  end
+end
+
+class ErrorRangoIteracion < ContextError
+  def initialize(inicio, final, tipo)
+    @inicio = inicio
+    @final = final
+    @tipo = tipo
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el rango de la iteración es de tipo \"#{@tipo}\""
+  end
+end
+
+class ErrorCondicionIteracion < ContextError
+  def initialize(inicio, final, tipo)
+    @inicio = inicio
+    @final = final
+    @tipo = tipo
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la condición de la iteración es de tipo \"#{@tipo}\""
+  end
+end
+
+class ErrorRangoCaso < ContextError
+  def initialize(inicio, final, tipo)
+    @inicio = inicio
+    @final = final
+    @tipo = tipo
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el rango del caso es del tipo \"#{@tipo}\" en vez de range"
   end
 end
 
@@ -62,36 +157,6 @@ class ErrorIteracion_D < ContextError
    def to_s
      "El tipo de rango no es un range"
    end
-end
-
-class NoEsInt < ContextError
-  def initialize(token)
-    @token = token
-  end
-
-  def to_s
-    "Error en la línea #{@token.linea}, columna #{@token.columna}: La variable '#{@token.texto}', no es del tipo int"
-  end
-end
-
-class NoEsBool < ContextError
-  def initialize(token)
-    @token = token
-  end
-
-  def to_s
-    "Error en la línea #{@token.linea}, columna #{@token.columna}: La variable '#{@token.texto}', no es del tipo bool"
-  end
-end
-
-class NoEsRange < ContextError
-  def initialize(token)
-    @token = token
-  end
-
-  def to_s
-    "La variable '#{@token.texto}', no es del tipo range"
-  end
 end
 
 
@@ -245,24 +310,32 @@ end
 
 class Expresion
   attr_reader :type
+
+  class << self
+    attr_accessor :tipos_correctos
+  end
+
+  def check_types(clase_error = ErrorDeTipo)
+    tiposHijos = @hijos.reject {|_, hijo| !(hijo.is_a? Expresion)}.map {|_, hijo| hijo.type}
+    @type = self.class.tipos_correctos[tiposHijos]
+    if @type.nil? then
+      @type = Rangex::TypeError
+      unless tiposHijos.include?(Rangex::TypeError) then
+        $ErroresContexto << clase_error::new(inicio, final, self.class.name.gsub(/_/,' '), *tiposHijos)
+      end
+    end
+  end
 end
 
 class Modulo
+  @tipos_correctos = { [Rangex::Int, Rangex::Int] => Rangex::Int }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion modulo entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if Rangex::Int != self.operando_derecho.type then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion modulo entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Int
+    check_type
   end
 end
 
@@ -271,7 +344,7 @@ class Caso
     self.rango.check(tabla)
     if Rangex::Range != self.rango.type then
       @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el rango del caso es del tipo \"#{self.rango.type}\" en vez de range"
+      $ErroresContexto << ErrorRangoCaso::new(@inicio, @final, self.rango.type)
     end
     @inicio = self.rango.inicio
     self.instruccion.check(tabla)
@@ -279,307 +352,228 @@ class Caso
 end
 
 class Por
+  @tipos_correctos = {
+    [Rangex::Int  , Rangex::Int] => Rangex::Int  ,
+    [Rangex::Range, Rangex::Int] => Rangex::Range
+  }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    case [self.operando_izquierdo.type, self.operando_derecho.type]
-      when [Rangex::Int  , Rangex::Int] then @type = Rangex::Int
-      when [Rangex::Range, Rangex::Int] then @type = Rangex::Range
-      else
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer una operacion con \"por\" entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    end
+    check_types
   end
 end
 
 class Mas
+  @tipos_correctos = {
+    [Rangex::Int  , Rangex::Int  ] => Rangex::Int  ,
+    [Rangex::Range, Rangex::Range] => Rangex::Range
+  }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_derecho.type != self.operando_izquierdo.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mas entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if !([Rangex::Int, Rangex::Range].include?(self.operando_izquierdo.type)) then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mas entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = self.operando_izquierdo.type
+    check_types
   end
 end
 
 class Resta
+  @tipos_correctos = { [Rangex::Int, Rangex::Int] => Rangex::Int }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion resta entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if Rangex::Int != self.operando_derecho.type then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion resta entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Int
+    check_types
   end
 end
 
 class Construccion
+  @tipos_correctos = { [Rangex::Int, Rangex::Int] => Rangex::Range }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion construccion entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if Rangex::Int != self.operando_derecho.type then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion construccion entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Range
+    check_types
   end
 end
 
 class Division
+  @tipos_correctos = { [Rangex::Int, Rangex::Int] => Rangex::Int }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion division entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if Rangex::Int != self.operando_derecho.type then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion division entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Int
+    check_types
   end
 end
 
 class Desigual
+  @tipos_correctos = {
+    [Rangex::Int  , Rangex::Int  ] => Rangex::Bool,
+    [Rangex::Range, Rangex::Range] => Rangex::Bool,
+    [Rangex::Bool , Rangex::Bool ] => Rangex::Bool
+  }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion desigual entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion desigual entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class Menor_Que
+  @tipos_correctos = {
+    [Rangex::Int  , Rangex::Int  ] => Rangex::Bool,
+    [Rangex::Range, Rangex::Range] => Rangex::Bool
+  }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menor que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menor que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class Menor_Igual_Que
+  @tipos_correctos = {
+    [Rangex::Int  , Rangex::Int  ] => Rangex::Bool,
+    [Rangex::Range, Rangex::Range] => Rangex::Bool
+  }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menor o igual que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menor o igual que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class Interseccion
+  @tipos_correctos = { [Rangex::Range, Rangex::Range] => Rangex::Bool }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion interseccion entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if Rangex::Range != self.operando_derecho.type then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion interseccion entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Range
+    check_types
   end
 end
 
 class Igual
+  @tipos_correctos = {
+    [Rangex::Int  , Rangex::Int  ] => Rangex::Bool,
+    [Rangex::Range, Rangex::Range] => Rangex::Bool,
+    [Rangex::Bool , Rangex::Bool ] => Rangex::Bool
+  }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion igual entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion igual entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class Mayor_Que
+  @tipos_correctos = {
+    [Rangex::Int  , Rangex::Int  ] => Rangex::Bool,
+    [Rangex::Range, Rangex::Range] => Rangex::Bool
+  }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mayor que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mayor que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class Mayor_Igual_Que
+  @tipos_correctos = {
+    [Rangex::Int  , Rangex::Int  ] => Rangex::Bool,
+    [Rangex::Range, Rangex::Range] => Rangex::Bool
+  }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mayor o igual que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if ![Rangex::Int, Rangex::Range].include?(self.operando_derecho.type) then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion mayor o igual que entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class Pertenece
+  @tipos_correctos = { [Rangex::Int, Rangex::Range] => Rangex::Bool }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
-    if Rangex::Int != self.operando_izquierdo.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion pertenece entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    end
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if Rangex::Range != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion pertenece entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class And
+  @tipos_correctos = { [Rangex::Bool, Rangex::Bool] => Rangex::Bool }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion and entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if Rangex::Bool != self.operando_derecho.type then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion and entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class Or
+  @tipos_correctos = { [Rangex::Bool, Rangex::Bool] => Rangex::Bool }
+
   def check(tabla)
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    if self.operando_izquierdo.type != self.operando_derecho.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion or entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-    else
-      if Rangex::Bool != self.operando_derecho.type then
-        @type = Rangex::TypeError
-        raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion or entre operandos de tipos \"#{self.operando_izquierdo.type}\" y \"#{self.operando_derecho.type}\""
-      end
-    end
-    @type = Rangex::Bool
+    check_types
   end
 end
 
 class Not
+  @tipos_correctos = { [Rangex::Bool] => Rangex::Bool }
+
   def check(tabla)
     self.operando.check(tabla)
     @final = self.operando.final
-    if Rangex::Bool != self.operando.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion not a un operando de tipo \"#{self.operando.type}\""
-    end
-    @type = Rangex::Bool
+    check_types(ErrorDeTipoUnario)
   end
 end
 
 class Menos_Unario
+  @tipos_correctos = { [Rangex::Int] => Rangex::Int }
+
   def check(tabla)
     self.operando.check(tabla)
     @final = self.operando_derecho.final
-    if Rangex::Int != self.operando.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion menos unario a un operando de tipo \"#{self.operando.type}\""
-    end
-    @type = Rangex::Int
+    check_types(ErrorDeTipoUnario)
   end
 end
 
@@ -603,92 +597,113 @@ end
 
 class Variable
   def check(tabla)
-    variable = tabla.find(self.nombre.texto)
-    @type = Rangex::TypeError
-    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la variable \"#{self.nombre.texto}\" no se encuentra declarada" if variable.nil?
-    @type = variable[:tipo]
+    begin
+      variable = tabla.find(self.nombre.texto)
+    rescue RedefinirError => r
+      $ErroresContexto << r
+    end
+
+    if variable.nil? then
+      @type = Rangex::TypeError
+      $ErroresContexto << NoDeclarada::new(@inicio, @final, self.nombre.texto)
+    else
+      @type = variable[:tipo]
+    end
   end
 end
 
 class Funcion_Bottom
+  @tipos_correctos = { [Rangex::Range] => Rangex::Int }
+
   def check(tabla)
     self.argumento.check(tabla)
-    @type = Rangex::TypeError
-    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la funcion bottom es de tipo \"#{self.argumento.type}\"" unless Rangex::Range == self.argumento.type
-    @type = Rangex::Int
+    check_types(ErrorDeTipoFuncion)
   end
 end
 
 class Funcion_Length
+  @tipos_correctos = { [Rangex::Range] => Rangex::Int }
+
   def check(tabla)
     self.argumento.check(tabla)
-    @type = Rangex::TypeError
-    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la funcion length es de tipo \"#{self.argumento.type}\"" unless Rangex::Range == self.argumento.type
-    @type = Rangex::Int
+    check_types(ErrorDeTipoFuncion)
   end
 end
 
 class Funcion_Top
+  @tipos_correctos = { [Rangex::Range] => Rangex::Int }
+
   def check(tabla)
     self.argumento.check(tabla)
-    @type = Rangex::TypeError
-    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la funcion top es de tipo \"#{self.argumento.type}\"" unless Rangex::Range == self.argumento.type
-    @type = Rangex::Int
+    check_types(ErrorDeTipoFuncion)
   end
 end
 
 class Funcion_Rtoi
+  @tipos_correctos = { [Rangex::Range] => Rangex::Int }
+
   def check(tabla)
     self.argumento.check(tabla)
-    @type = Rangex::TypeError
-    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la funcion rtoi es de tipo \"#{self.argumento.type}\"" unless Rangex::Range == self.argumento.type
-    @type = Rangex::Int
+    check_types(ErrorDeTipoFuncion)
   end
 end
 
 class Asignacion
   def check(tabla)
-    variable = tabla.find(self.var.texto)
-    if variable.nil? then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la variable \"#{self.var.texto}\" no ha sido declarada"
-    end
+    begin
+      variable = tabla.find(self.var.texto)
 
-    @type = Rangex::TypeError
-    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta modificar la variable \"#{self.var.texto}\" que pertenece a una iteración" unless variable[:es_mutable]
+      if variable.nil? then
+        $ErroresContexto << NoDeclarada::new(@inicio, @final, self.var.texto)
+      else
+        unless variable[:es_mutable] then
+          $ErroresContexto << ErrorModificarIteracion::new(@inicio, @final, self.var.texto)
+        end
+      end
+    rescue RedefinirError => r
+      $ErroresContexto << r
+    end
 
     self.expresion.check(tabla)
     @final = self.expresion.final
-    if variable[:tipo] != self.expresion.type then
-      @type = Rangex::TypeError
-      raise  "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta asignar algo del tipo \"#{self.expresion.type}\" a la variable \"#{self.var.texto}\" de tipo \"#{self.var.type}\""
+    unless [variable[:tipo], Rangex::TypeError].include?(self.expresion.type) then
+      $ErroresContexto << ErrorDeTipoAsignacion::new(@inicio, @final, self.expresion.type, self.var.texto, variable[:tipo])
     end
   end
 end
 
 class Bloque
   def check(tabla)
-    tabla2 = self.declaraciones.inject(SymTable::new(tabla)) do |acum, declaracion|
-      declaracion.variables.inject(acum) do |acum2, variable|
-        acum2.insert(variable, declaracion.tipo.to_type)
+    begin
+      tabla2 = self.declaraciones.inject(SymTable::new(tabla)) do |acum, declaracion|
+        declaracion.variables.inject(acum) do |acum2, variable|
+          acum2.insert(variable, declaracion.tipo.to_type)
+        end
       end
-    end
 
-    self.instrucciones.each do |instruccion|
-      instruccion.check(tabla2)
+      self.instrucciones.each do |instruccion|
+        instruccion.check(tabla2)
+      end
+    rescue RedefinirError => r
+      $ErroresContexto << r
     end
   end
 end
 
 class Read
   def check(tabla)
-    variable = tabla.find(self.variable.texto)
-    if variable.nil? then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la variable \"#{self.var.texto}\" no ha sido declarada"
+    begin
+      variable = tabla.find(self.variable.texto)
+    rescue RedefinirError => r
+      $ErroresContexto << r
     end
-    @type = Rangex::TypeError
-    raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta modificar la variable \"#{self.var.texto}\" que pertenece a una iteración" unless variable[:es_mutable]
+
+    if variable.nil? then
+      $ErroresContexto << NoDeclarada::new(@inicio, @final, self.var.texto)
+    end
+    unless variable[:es_mutable]
+      $ErroresContexto << ErrorModificarIteracion::new(@inicio, @final, self.var.texto)
+    end
   end
 end
 
@@ -706,16 +721,15 @@ class Writeln
     self.elementos.each do |elemento|
       elemento.check(tabla) unless elemento.is_a?(TkString)
     end
+  @final = self.elementos.final
   end
-  #@final = self.elementos.final
 end
 
 class Condicional_Else
   def check(tabla)
     self.condicion.check(tabla)
-    if Rangex::Bool != self.condicion.type then
-        raise NoEsBool::new self.condicion.nombre if self.condicion.instance_of?(Variable)
-        raise NoEsBool::new self.condicion.valor  if (self.condicion.instance_of?(True) or self.condicion.instance_of?(False))
+    unless [Rangex::Bool, Rangex::TypeError].include?(self.condicion.type) then
+      $ErroresContexto << ErrorCondicionCondicional::new(@inicio, @final, self.condicion.type)
     end
 
     self.verdadero.check(tabla)
@@ -727,9 +741,8 @@ end
 class Condicional_If
   def check(tabla)
     self.condicion.check(tabla)
-    if Rangex::Bool != self.condicion.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la condicion de la iteracion es de tipo \"#{self.condicion.type}\""
+    unless [Rangex::Bool, Rangex::TypeError].include?(self.condicion.type) then
+      $ErroresContexto << ErrorCondicionCondicional::new(@inicio, @final, self.condicion.type)
     end
 
     self.verdadero.check(tabla)
@@ -740,9 +753,8 @@ end
 class Case
   def check(tabla)
     self.exp.check(tabla)
-    if Rangex::Int != self.exp.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la expresión del case es de tipo \"#{self.condicion.type}\""
+    unless [Rangex::Int, Rangex::TypeError].include?(self.exp.type) then
+      $ErroresContexto << ErrorExpresionCase::new(@inicio, @final, self.exp.type)
     end
 
     self.casos.each do |caso|
@@ -754,11 +766,11 @@ end
 class Iteracion_Det
   def check(tabla)
     self.rango.check(tabla)
-    if Rangex::Range != self.rango.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el rango de la iteración es de tipo \"#{self.condicion.type}\""
+    unless [Rangex::Range, Rangex::TypeError].include?(self.rango.type) then
+      $ErroresContexto << ErrorRangoIteracion::new(@inicio, @final, self.rango.type)
     end
     tabla2 = SymTable::new(tabla).insert(self.variable, Rangex::Int, false)
+
     self.instruccion.check(tabla2)
     @final = self.instruccion.final
   end
@@ -767,9 +779,8 @@ end
 class Iteracion_Indet
   def check(tabla)
     self.condicion.check(tabla)
-    if Rangex::Bool != self.condicion.type then
-      @type = Rangex::TypeError
-      raise "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la condicion de la iteración es de tipo \"#{self.condicion.type}\""
+    unless [Rangex::Bool, Rangex::TypeError].include?(self.condicion.type) then
+      $ErroresContexto << ErrorCondicionIteracion::new(@inicio, @final, self.condicion.type)
     end
 
     self.instruccion.check(tabla)
