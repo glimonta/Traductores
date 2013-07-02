@@ -357,6 +357,12 @@ class Caso
     @inicio = self.rango.inicio
     self.instruccion.check(tabla)
   end
+
+  def run(tabla, expresion)
+    if expresion >= self.rango.run(tabla)[0] and expresion <= self.rango.run(tabla)[1] then
+      self.instruccion.run(tabla)
+    end
+  end
 end
 
 class Por
@@ -757,6 +763,11 @@ class Variable
       @type = variable[:tipo]
     end
   end
+
+  def run(tabla)
+    variable = tabla.find(self.nombre.texto)
+    variable[:valor]
+  end
 end
 
 class Funcion_Bottom
@@ -893,6 +904,51 @@ class Read
       $ErroresContexto << ErrorModificarIteracion::new(@inicio, @final, self.var.texto)
     end
   end
+
+  def run(tabla)
+    variable = tabla.find(self.variable.texto)
+    entrada = STDIN.gets
+    entrada = entrada.gsub(/\s*/, '')
+    if Rangex::Bool == variable[:tipo] then
+      entrada = entrada.match(/(true, false)/)
+        if "true" == entrada[0] then
+          variable[:valor] = true
+        elsif "false" == entrada[0] then
+          variable[:valor] = false
+        else
+          puts "La variable es de tipo bool y no se leyo ni true ni false"
+          run(tabla)
+        end
+    elsif Rangex::Range == variable[:tipo] then
+      entrada = entrada.match(/(-?[0-9]+\.\.-?[0-9]+|-?[0-9]+,-?[0-9]+)/)
+        unless entrada.nil? then
+          unless entrada[0].include?(',') then
+            cota_inf = entrada[0].sub(/\.\.-?[0-9]+/, '').to_i
+            cota_sup = entrada[0].sub(/-?[0-9]+\.\./, '').to_i
+          else
+            cota_inf = entrada[0].sub(/,-?[0-9]+/, '').to_i
+            cota_sup = entrada[0].sub(/-?[0-9]+,/, '').to_i
+          end
+          unless cota_inf > cota_sup then
+            variable[:valor] = [cota_inf.to_i, cota_sup.to_i]
+          else
+            puts "Las cotas ingresadas no son validas"
+            run(tabla)
+          end
+        else
+          puts "La variable es de tipo range y no se leyo una expresion valida"
+          run(tabla)
+        end
+    else
+      entrada = entrada.match(/-?[0-9]+/)
+        unless entrada.nil? then
+          variable[:valor] = entrada[0].to_i
+        else
+          puts "La variable es de tipo int y no se leyo una expresion valida"
+          run(tabla)
+        end
+    end
+  end
 end
 
 class Write
@@ -906,9 +962,11 @@ class Write
   def run(tabla)
     self.elementos.each do |elemento|
       unless elemento.is_a?(TkString) then
-        elemento.run(tabla)
+        print elemento.run(tabla)
+        print ' '
       else
-        puts elemento.texto
+        print elemento.texto.gsub(/"/, '')
+        print ' '
       end
     end
   end
@@ -920,6 +978,17 @@ class Writeln
       elemento.check(tabla) unless elemento.is_a?(TkString)
     end
   @final = self.elementos.final
+  end
+
+  def run(tabla)
+    self.elementos.each do |elemento|
+      unless elemento.is_a?(TkString) then
+        print elemento.run(tabla)
+      else
+        print elemento.texto.gsub(/"/, '')
+      end
+    end
+    puts ''
   end
 end
 
@@ -934,6 +1003,14 @@ class Condicional_Else
     self.falso.check(tabla)
     @final = self.falso.final
   end
+
+  def run(tabla)
+    if self.condicion.run(tabla) then
+      self.verdadero.run(tabla)
+    else
+      self.falso.run(tabla)
+    end
+  end
 end
 
 class Condicional_If
@@ -946,6 +1023,10 @@ class Condicional_If
     self.verdadero.check(tabla)
     @final = self.verdadero.final
   end
+
+  def run(tabla)
+     self.verdadero.run(tabla) if self.condicion.run(tabla)
+  end
 end
 
 class Case
@@ -957,6 +1038,14 @@ class Case
 
     self.casos.each do |caso|
       caso.check(tabla) unless caso.is_a?(TkString)
+    end
+  end
+
+  def run(tabla)
+    expresion = self.exp.run(tabla)
+
+    self.casos.each do |caso|
+      caso.run(tabla, expresion)
     end
   end
 end
@@ -972,6 +1061,15 @@ class Iteracion_Det
     self.instruccion.check(tabla2)
     @final = self.instruccion.final
   end
+
+  def run(tabla)
+    tabla2 = SymTable::new(tabla).insert(self.variable, Rangex::Int, false)
+    variable = tabla2.find(self.variable.texto)
+
+    for variable[:valor] in self.rango.run(tabla2)[0]..self.rango.run(tabla2)[1] do
+      self.instruccion.run(tabla2)
+    end
+  end
 end
 
 class Iteracion_Indet
@@ -983,5 +1081,11 @@ class Iteracion_Indet
 
     self.instruccion.check(tabla)
     @final = self.instruccion.final
+  end
+
+  def run(tabla)
+    while self.condicion.run(tabla) do
+      self.instruccion.run(tabla)
+    end
   end
 end

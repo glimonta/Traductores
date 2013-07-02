@@ -92,7 +92,7 @@ rule
                | 'writeln' ElementosSalida                            { result = Writeln::new(val[1]).set_inicio(val[0].inicio)                          }
                | 'if' Expresion 'then' Instruccion 'else' Instruccion { result = Condicional_Else::new(val[1], val[3], val[5]).set_inicio(val[0].inicio) }
                | 'if' Expresion 'then' Instruccion                    { result = Condicional_If::new(val[1], val[3]).set_inicio(val[0].inicio)           }
-               | 'case' Expresion 'of' Casos 'end'                    { result = Case::new(val[0], val[3]).set_inicio(val[0].inicio).set_final(val[4].final)                     }
+               | 'case' Expresion 'of' Casos 'end'                    { result = Case::new(val[1], val[3]).set_inicio(val[0].inicio).set_final(val[4].final)                     }
                | 'for' 'id' 'in' Expresion 'do' Instruccion           { result = Iteracion_Det::new(val[1], val[3], val[5]).set_inicio(val[0].inicio)    }
                | 'while' Expresion 'do' Instruccion                   { result = Iteracion_Indet::new(val[1], val[3]).set_inicio(val[0].inicio)          }
                ;
