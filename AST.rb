@@ -306,6 +306,10 @@ class Programa
     self.instruccion.check(SymTable::new)
     @final = self.instruccion.final
   end
+
+  def run
+    self.instruccion.run(SymTable::new)
+  end
 end
 
 class Expresion
@@ -335,7 +339,11 @@ class Modulo
     @inicio = self.operando_izquierdo.inicio
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
-    check_type
+    check_types
+  end
+
+  def run(tabla)
+    self.operando_izquierdo.run(tabla) % self.operando_derecho.run(tabla)
   end
 end
 
@@ -364,6 +372,18 @@ class Por
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    if Rangex::Int == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) * self.operando_derecho.run(tabla)
+    else
+      unless self.operando_derecho.run(tabla) < 0 then
+        [self.operando_izquierdo.run(tabla)[0] * self.operando_derecho.run(tabla), self.operando_izquierdo.run(tabla)[1] * self.operando_derecho.run(tabla)]
+      else
+        [self.operando_izquierdo.run(tabla)[1] * self.operando_derecho.run(tabla), self.operando_izquierdo.run(tabla)[0] * self.operando_derecho.run(tabla)]
+      end
+    end
+  end
 end
 
 class Mas
@@ -379,6 +399,14 @@ class Mas
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    if Rangex::Int == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) + self.operando_derecho.run(tabla)
+    else
+      [self.operando_izquierdo.run(tabla)[0], self.operando_derecho.run(tabla)[1]]
+    end
+  end
 end
 
 class Resta
@@ -390,6 +418,10 @@ class Resta
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
     check_types
+  end
+
+  def run(tabla)
+    self.operando_izquierdo.run(tabla) - self.operando_derecho.run(tabla)
   end
 end
 
@@ -403,6 +435,14 @@ class Construccion
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    if self.operando_izquierdo.run(tabla) > self.operando_derecho.run(tabla) then
+      raise "Error en la construccion: El operando izq es mayor al der"
+    else
+      [self.operando_izquierdo.run(tabla), self.operando_derecho.run(tabla)]
+    end
+  end
 end
 
 class Division
@@ -414,6 +454,10 @@ class Division
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
     check_types
+  end
+
+  def run(tabla)
+    self.operando_izquierdo.run(tabla) / self.operando_derecho.run(tabla)
   end
 end
 
@@ -431,6 +475,16 @@ class Desigual
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    if Rangex::Int == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) != self.operando_derecho.run(tabla)
+    elsif Rangex::Bool == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) != self.operando_derecho.run(tabla)
+    else
+      self.operando_izquierdo.run(tabla)[0] != self.operando_derecho.run(tabla)[0] and self.operando_izquierdo.run(tabla)[1] != self.operando_derecho.run(tabla)[1]
+    end
+  end
 end
 
 class Menor_Que
@@ -445,6 +499,14 @@ class Menor_Que
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
     check_types
+  end
+
+  def run(tabla)
+    if Rangex::Int == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) < self.operando_derecho.run(tabla)
+    else
+      self.operando_izquierdo.run(tabla)[1] < self.operando_derecho.run(tabla)[0]
+    end
   end
 end
 
@@ -461,10 +523,18 @@ class Menor_Igual_Que
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    if Rangex::Int == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) <= self.operando_derecho.run(tabla)
+    else
+      self.operando_izquierdo.run(tabla)[1] <= self.operando_derecho.run(tabla)[0]
+    end
+  end
 end
 
 class Interseccion
-  @tipos_correctos = { [Rangex::Range, Rangex::Range] => Rangex::Bool }
+  @tipos_correctos = { [Rangex::Range, Rangex::Range] => Rangex::Range }
 
   def check(tabla)
     self.operando_izquierdo.check(tabla)
@@ -472,6 +542,19 @@ class Interseccion
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
     check_types
+  end
+
+  def run(tabla)
+    rango_izq = self.operando_izquierdo.run(tabla)
+    rango_der = self.operando_derecho.run(tabla)
+    cota_inferior = [rango_izq[0], rango_der[0]].max
+    cota_superior = [rango_izq[1], rango_der[1]].min
+
+    unless cota_inferior > cota_superior then
+      [[rango_izq[0], rango_der[0]].max , [rango_izq[1], rango_der[1]].min]
+    else
+      raise "Error: El rango resultante de la interseccion es vacio."
+    end
   end
 end
 
@@ -489,6 +572,16 @@ class Igual
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    if Rangex::Int == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) == self.operando_derecho.run(tabla)
+    elsif Rangex::Bool == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) == self.operando_derecho.run(tabla)
+    else
+      self.operando_izquierdo.run(tabla)[0] == self.operando_derecho.run(tabla)[0] and self.operando_izquierdo.run(tabla)[1] == self.operando_derecho.run(tabla)[1]
+    end
+  end
 end
 
 class Mayor_Que
@@ -503,6 +596,14 @@ class Mayor_Que
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
     check_types
+  end
+
+  def run(tabla)
+    if Rangex::Int == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) > self.operando_derecho.run(tabla)
+    else
+      self.operando_izquierdo.run(tabla)[0] > self.operando_derecho.run(tabla)[1]
+    end
   end
 end
 
@@ -519,6 +620,14 @@ class Mayor_Igual_Que
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    if Rangex::Int == self.operando_izquierdo.type then
+      self.operando_izquierdo.run(tabla) >= self.operando_derecho.run(tabla)
+    else
+      self.operando_izquierdo.run(tabla)[0] >= self.operando_derecho.run(tabla)[1]
+    end
+  end
 end
 
 class Pertenece
@@ -530,6 +639,16 @@ class Pertenece
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
     check_types
+  end
+
+  def run(tabla)
+    entero = self.operando_izquierdo.run(tabla)
+    rango = self.operando_derecho.run(tabla)
+    if entero <= rango[1] and entero >= rango[0] then
+      true
+    else
+      false
+    end
   end
 end
 
@@ -543,6 +662,10 @@ class And
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    (self.operando_izquierdo.run(tabla) and self.operando_derecho.run(tabla))
+  end
 end
 
 class Or
@@ -555,6 +678,10 @@ class Or
     @final = self.operando_derecho.final
     check_types
   end
+
+  def run(tabla)
+    (self.operando_izquierdo.run(tabla) or self.operando_derecho.run(tabla))
+  end
 end
 
 class Not
@@ -565,6 +692,10 @@ class Not
     @final = self.operando.final
     check_types(ErrorDeTipoUnario)
   end
+
+  def run(tabla)
+    (not self.operando.run(tabla))
+  end
 end
 
 class Menos_Unario
@@ -572,8 +703,12 @@ class Menos_Unario
 
   def check(tabla)
     self.operando.check(tabla)
-    @final = self.operando_derecho.final
+    @final = self.operando.final
     check_types(ErrorDeTipoUnario)
+  end
+
+  def run(tabla)
+    (- self.operando.run(tabla))
   end
 end
 
@@ -581,17 +716,29 @@ class Entero
   def check(tabla)
     @type = Rangex::Int
   end
+
+  def run(tabla)
+    self.valor.texto.to_i
+  end
 end
 
 class True
   def check(tabla)
     @type = Rangex::Bool
   end
+
+  def run(tabla)
+    true
+  end
 end
 
 class False
   def check(tabla)
     @type = Rangex::Bool
+  end
+
+  def run(tabla)
+    false
   end
 end
 
@@ -619,6 +766,10 @@ class Funcion_Bottom
     self.argumento.check(tabla)
     check_types(ErrorDeTipoFuncion)
   end
+
+  def run(tabla)
+    self.argumento.run(tabla)[0]
+  end
 end
 
 class Funcion_Length
@@ -627,6 +778,10 @@ class Funcion_Length
   def check(tabla)
     self.argumento.check(tabla)
     check_types(ErrorDeTipoFuncion)
+  end
+
+  def run(tabla)
+    self.argumento.run(tabla)[1] - self.argumento.run(tabla)[0]
   end
 end
 
@@ -637,6 +792,10 @@ class Funcion_Top
     self.argumento.check(tabla)
     check_types(ErrorDeTipoFuncion)
   end
+
+  def run(tabla)
+    self.argumento.run(tabla)[1]
+  end
 end
 
 class Funcion_Rtoi
@@ -646,12 +805,23 @@ class Funcion_Rtoi
     self.argumento.check(tabla)
     check_types(ErrorDeTipoFuncion)
   end
+
+  def run(tabla)
+    if self.argumento.run(tabla)[0] == self.argumento.run(tabla)[1] then
+      self.argumento.run(tabla)[0]
+    else
+      raise "Error funcion rtoi: El rango tiene mas de un elemento"
+    end
+  end
 end
 
 class Asignacion
   def check(tabla)
     begin
       variable = tabla.find(self.var.texto)
+
+      self.expresion.check(tabla)
+      @final = self.expresion.final
 
       if variable.nil? then
         $ErroresContexto << NoDeclarada::new(@inicio, @final, self.var.texto)
@@ -664,11 +834,17 @@ class Asignacion
       $ErroresContexto << r
     end
 
-    self.expresion.check(tabla)
-    @final = self.expresion.final
-    unless [variable[:tipo], Rangex::TypeError].include?(self.expresion.type) then
-      $ErroresContexto << ErrorDeTipoAsignacion::new(@inicio, @final, self.expresion.type, self.var.texto, variable[:tipo])
+    #Caliche as fuck.
+    unless variable.nil? then
+      unless [variable[:tipo], Rangex::TypeError].include?(self.expresion.type) then
+        $ErroresContexto << ErrorDeTipoAsignacion::new(@inicio, @final, self.expresion.type, self.var.texto, variable[:tipo])
+      end
     end
+  end
+
+  def run(tabla)
+    variable = tabla.find(self.var.texto)
+    variable[:valor] = self.expresion.run(tabla)
   end
 end
 
@@ -686,6 +862,18 @@ class Bloque
       end
     rescue RedefinirError => r
       $ErroresContexto << r
+    end
+  end
+
+  def run(tabla)
+    tabla2 = self.declaraciones.inject(SymTable::new(tabla)) do |acum, declaracion|
+      declaracion.variables.inject(acum) do |acum2, variable|
+        acum2.insert(variable, declaracion.tipo.to_type)
+      end
+    end
+
+    self.instrucciones.each do |instruccion|
+      instruccion.run(tabla2)
     end
   end
 end
@@ -713,6 +901,16 @@ class Write
       elemento.check(tabla) unless elemento.is_a?(TkString)
     end
     @final = self.elementos.final
+  end
+
+  def run(tabla)
+    self.elementos.each do |elemento|
+      unless elemento.is_a?(TkString) then
+        elemento.run(tabla)
+      else
+        puts elemento.texto
+      end
+    end
   end
 end
 

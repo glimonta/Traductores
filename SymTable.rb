@@ -51,9 +51,9 @@ class SymTable
 
   #metodo que permite insertar un simbolo a la tabla de simbolos, no se pueden redefinir simbolos al momento de
   #hacer una insercion por esto se chequea esta caracteristica primero
-  def insert(token, tipo, es_mutable = true)
+  def insert(token, tipo, es_mutable = true, valor = nil)
     raise RedefinirError::new(token, @tabla[token.texto][:token]) if @tabla.has_key?(token.texto)
-    @tabla[token.texto] = { :tipo => tipo, :es_mutable => es_mutable, :token => token }
+    @tabla[token.texto] = { :tipo => tipo, :es_mutable => es_mutable, :token => token, :valor => valor }
     @nombres << token.texto
     self
   end
@@ -70,9 +70,9 @@ class SymTable
 
   #metodo que permite actualizar un simbolo ya existente en la tabla de simbolos, si el simbolo no esta en la tabla
   #se procede a levantar una excepcion
-  def update(token, tipo, es_mutable)
+  def update(token, tipo, es_mutable, valor)
     raise UpdateError::new token unless @tabla.has_key?(token.texto)
-    @tabla[token.texto] = { :tipo => tipo, :es_mutable => es_mutable, :token => token }
+    @tabla[token.texto] = { :tipo => tipo, :es_mutable => es_mutable, :token => token, :valor => valor }
     self
   end
 

@@ -24,7 +24,8 @@ def main
     unless $ErroresContexto.empty?
       puts $ErroresContexto
     else
-      puts ast
+      ast.run
+      #puts ast
     end
   rescue LexerException => l
     puts l.lexer
