@@ -159,6 +159,77 @@ class ErrorIteracion_D < ContextError
    end
 end
 
+class DynamicError < RuntimeError
+end
+
+class ErrorOverflow < DynamicError
+  def initialize(inicio, final)
+    @incio = inicio
+    @final = final
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: El resultado no puede representarse en 32 bits"
+  end
+end
+
+class RangoInvalido < DynamicError
+  def initialize(inicio, final)
+    @inicio = inicio
+    @final = final
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: El rango es inválido."
+  end
+end
+
+class DivisionCero < DynamicError
+  def initialize(inicio, final)
+    @inicio = inicio
+    @final = final
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: Intento de división por cero."
+  end
+end
+
+class RangoVacio < DynamicError
+  def initialize(inicio, final)
+    @inicio = inicio
+    @final = final
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: El rango es vacio."
+  end
+end
+
+class NoInicializada < DynamicError
+  def initialize(inicio, final, nombre)
+    @inicio = inicio
+    @final = final
+    @nombre = nombre
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: La variable \"#{@nombre}\" no ha sido inicializada."
+  end
+end
+
+class RangoRtoi < DynamicError
+  def initialize(inicio, final)
+    @inicio = inicio
+    @final = final
+  end
+
+  def to_s
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: El rango de la función rtoi tiene mas de un elemento."
+  end
+end
+
+
 
 # Se encarga de crear una nueva clase dada la superclase,
 # el nombre de la nueva clase y los atributos que tendrá
@@ -329,6 +400,11 @@ class Expresion
       end
     end
   end
+
+  def detectar_overflow(resultado)
+    raise ErrorOverflow::new(@inicio, @final) if (resultado > 2147483647 or resultado < -2147483647)
+    resultado
+  end
 end
 
 class Modulo
@@ -343,7 +419,7 @@ class Modulo
   end
 
   def run(tabla)
-    self.operando_izquierdo.run(tabla) % self.operando_derecho.run(tabla)
+    detectar_overflow(self.operando_izquierdo.run(tabla) % self.operando_derecho.run(tabla))
   end
 end
 
@@ -381,12 +457,16 @@ class Por
 
   def run(tabla)
     if Rangex::Int == self.operando_izquierdo.type then
-      self.operando_izquierdo.run(tabla) * self.operando_derecho.run(tabla)
+      detectar_overflow(self.operando_izquierdo.run(tabla) * self.operando_derecho.run(tabla))
     else
       unless self.operando_derecho.run(tabla) < 0 then
-        [self.operando_izquierdo.run(tabla)[0] * self.operando_derecho.run(tabla), self.operando_izquierdo.run(tabla)[1] * self.operando_derecho.run(tabla)]
+        cota_inf = detectar_overflow(self.operando_izquierdo.run(tabla)[0] * self.operando_derecho.run(tabla))
+        cota_sup = detectar_overflow(self.operando_izquierdo.run(tabla)[1] * self.operando_derecho.run(tabla))
+        [cota_inf, cota_sup]
       else
-        [self.operando_izquierdo.run(tabla)[1] * self.operando_derecho.run(tabla), self.operando_izquierdo.run(tabla)[0] * self.operando_derecho.run(tabla)]
+        cota_inf = detectar_overflow(self.operando_izquierdo.run(tabla)[1] * self.operando_derecho.run(tabla))
+        cota_sup = detectar_overflow(self.operando_izquierdo.run(tabla)[0] * self.operando_derecho.run(tabla))
+        [cota_inf, cota_sup]
       end
     end
   end
@@ -408,9 +488,15 @@ class Mas
 
   def run(tabla)
     if Rangex::Int == self.operando_izquierdo.type then
-      self.operando_izquierdo.run(tabla) + self.operando_derecho.run(tabla)
+      detectar_overflow(self.operando_izquierdo.run(tabla) + self.operando_derecho.run(tabla))
     else
-      [self.operando_izquierdo.run(tabla)[0], self.operando_derecho.run(tabla)[1]]
+      cota_inf = [self.operando_izquierdo.run(tabla)[0], self.operando_derecho.run(tabla)[0]].min
+      cota_sup = [self.operando_izquierdo.run(tabla)[1], self.operando_derecho.run(tabla)[1]].max
+      unless cota_inf > cota_sup then
+        [cota_inf, cota_sup]
+      else
+        raise RangoInvalido::new(@inicio, @final)
+      end
     end
   end
 end
@@ -427,7 +513,7 @@ class Resta
   end
 
   def run(tabla)
-    self.operando_izquierdo.run(tabla) - self.operando_derecho.run(tabla)
+    detectar_overflow(self.operando_izquierdo.run(tabla) - self.operando_derecho.run(tabla))
   end
 end
 
@@ -444,7 +530,7 @@ class Construccion
 
   def run(tabla)
     if self.operando_izquierdo.run(tabla) > self.operando_derecho.run(tabla) then
-      raise "Error en la construccion: El operando izq es mayor al der"
+      raise RangoInvalido::new(@inicio, @final)
     else
       [self.operando_izquierdo.run(tabla), self.operando_derecho.run(tabla)]
     end
@@ -463,7 +549,11 @@ class Division
   end
 
   def run(tabla)
-    self.operando_izquierdo.run(tabla) / self.operando_derecho.run(tabla)
+    unless self.operando_derecho.run(tabla).zero? then
+      detectar_overflow(self.operando_izquierdo.run(tabla) / self.operando_derecho.run(tabla))
+    else
+      raise DivisionCero::new(@inicio, @final)
+    end
   end
 end
 
@@ -483,12 +573,10 @@ class Desigual
   end
 
   def run(tabla)
-    if Rangex::Int == self.operando_izquierdo.type then
-      self.operando_izquierdo.run(tabla) != self.operando_derecho.run(tabla)
-    elsif Rangex::Bool == self.operando_izquierdo.type then
-      self.operando_izquierdo.run(tabla) != self.operando_derecho.run(tabla)
-    else
+    if Rangex::Range == self.operando_izquierdo.type then
       self.operando_izquierdo.run(tabla)[0] != self.operando_derecho.run(tabla)[0] and self.operando_izquierdo.run(tabla)[1] != self.operando_derecho.run(tabla)[1]
+    else
+      self.operando_izquierdo.run(tabla) != self.operando_derecho.run(tabla)
     end
   end
 end
@@ -559,7 +647,7 @@ class Interseccion
     unless cota_inferior > cota_superior then
       [[rango_izq[0], rango_der[0]].max , [rango_izq[1], rango_der[1]].min]
     else
-      raise "Error: El rango resultante de la interseccion es vacio."
+      raise RangoVacio::new(@inicio, @final)
     end
   end
 end
@@ -580,12 +668,10 @@ class Igual
   end
 
   def run(tabla)
-    if Rangex::Int == self.operando_izquierdo.type then
-      self.operando_izquierdo.run(tabla) == self.operando_derecho.run(tabla)
-    elsif Rangex::Bool == self.operando_izquierdo.type then
-      self.operando_izquierdo.run(tabla) == self.operando_derecho.run(tabla)
-    else
+    if Rangex::Range == self.operando_izquierdo.type then
       self.operando_izquierdo.run(tabla)[0] == self.operando_derecho.run(tabla)[0] and self.operando_izquierdo.run(tabla)[1] == self.operando_derecho.run(tabla)[1]
+    else
+      self.operando_izquierdo.run(tabla) == self.operando_derecho.run(tabla)
     end
   end
 end
@@ -650,11 +736,7 @@ class Pertenece
   def run(tabla)
     entero = self.operando_izquierdo.run(tabla)
     rango = self.operando_derecho.run(tabla)
-    if entero <= rango[1] and entero >= rango[0] then
-      true
-    else
-      false
-    end
+    (rango[0] <= entero and entero <= rango[1])
   end
 end
 
@@ -714,7 +796,7 @@ class Menos_Unario
   end
 
   def run(tabla)
-    (- self.operando.run(tabla))
+    detectar_overflow(-self.operando.run(tabla))
   end
 end
 
@@ -724,7 +806,7 @@ class Entero
   end
 
   def run(tabla)
-    self.valor.texto.to_i
+    detectar_overflow(self.valor.texto.to_i)
   end
 end
 
@@ -766,7 +848,11 @@ class Variable
 
   def run(tabla)
     variable = tabla.find(self.nombre.texto)
-    variable[:valor]
+    if variable[:valor].nil? then
+      raise NoInicializada::new(@inicio, @final, self.nombre.texto)
+    else
+      variable[:valor]
+    end
   end
 end
 
@@ -792,7 +878,7 @@ class Funcion_Length
   end
 
   def run(tabla)
-    self.argumento.run(tabla)[1] - self.argumento.run(tabla)[0]
+    1 + self.argumento.run(tabla)[1] - self.argumento.run(tabla)[0]
   end
 end
 
@@ -821,7 +907,7 @@ class Funcion_Rtoi
     if self.argumento.run(tabla)[0] == self.argumento.run(tabla)[1] then
       self.argumento.run(tabla)[0]
     else
-      raise "Error funcion rtoi: El rango tiene mas de un elemento"
+      raise RangoRtoi::new(@inicio, @final)
     end
   end
 end
@@ -845,11 +931,8 @@ class Asignacion
       $ErroresContexto << r
     end
 
-    #Caliche as fuck.
-    unless variable.nil? then
-      unless [variable[:tipo], Rangex::TypeError].include?(self.expresion.type) then
-        $ErroresContexto << ErrorDeTipoAsignacion::new(@inicio, @final, self.expresion.type, self.var.texto, variable[:tipo])
-      end
+    unless variable.nil? or [variable[:tipo], Rangex::TypeError].include?(self.expresion.type) then
+      $ErroresContexto << ErrorDeTipoAsignacion::new(@inicio, @final, self.expresion.type, self.var.texto, variable[:tipo])
     end
   end
 
@@ -962,7 +1045,12 @@ class Write
   def run(tabla)
     self.elementos.each do |elemento|
       unless elemento.is_a?(TkString) then
-        print elemento.run(tabla)
+        valor = elemento.run(tabla)
+        if valor.is_a?(Array) then
+          print "#{valor[0]}..#{valor[1]}"
+        else
+          print valor
+        end
         print ' '
       else
         print elemento.texto.gsub(/"/, '')
@@ -983,7 +1071,12 @@ class Writeln
   def run(tabla)
     self.elementos.each do |elemento|
       unless elemento.is_a?(TkString) then
-        print elemento.run(tabla)
+        valor = elemento.run(tabla)
+        if valor.is_a?(Array) then
+          print "#{valor[0]}..#{valor[1]}"
+        else
+          print valor
+        end
       else
         print elemento.texto.gsub(/"/, '')
       end

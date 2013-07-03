@@ -37,6 +37,8 @@ def main
     puts d
   rescue ErrorSintactico => e
     puts e
+  rescue DynamicError => d
+    puts d
   end
 end
 
