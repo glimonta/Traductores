@@ -6,10 +6,14 @@ require 'Type'
 require 'SymTable'
 require 'Ubicacion'
 
+# Se crea una nueva clase que engloba a todos los errores de contexto
 class ContextError < RuntimeError
 end
 
+# Se crea un error de tipo para cuando los tipos de una operación no son adecuados, con su to_s correspondiente para ser impreso en pantalla.
 class ErrorDeTipo < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final, la operación donde ocurrió el error
+  # y los tipos que habían en el operando izquierdo y derecho.
   def initialize(inicio, final, operacion, tipo_izq, tipo_der)
     @inicio = inicio
     @final = final
@@ -18,12 +22,16 @@ class ErrorDeTipo < ContextError
     @tipo_der = tipo_der
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error (línea y columna de inicio y final), la operación y los tipos.
   def to_s
-    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion #{@operacion} entre operandos de tipos \"#{@tipo_izq}\" y \"#{@tipo_der}\""
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion #{@operacion} entre operandos de tipos \"#{@tipo_izq}\" y \"#{@tipo_der}\""
   end
 end
 
+# Se crea un error de tipo unario para cuando el tipo de una operación unaria no es adecuado, con su to_s correspondiente para ser impreso en pantalla.
 class ErrorDeTipoUnario < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final, la operación donde ocurrió el error
+  # y el tipo que habia en el operando.
   def initialize(incio, final, operacion, tipo)
     @inicio = inicio
     @final = final
@@ -31,24 +39,30 @@ class ErrorDeTipoUnario < ContextError
     @tipo = tipo
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error (línea y columna de inicio y final), la operación y el tipo del operando.
   def to_s
-    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion #{@operacion} a un operando de tipo \"#{@tipo}\""
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: se intenta hacer la operacion #{@operacion} a un operando de tipo \"#{@tipo}\""
   end
 end
 
+# Se crea un error de no declaración de variable para cuando se intenta utilizar una variable que no ha sido declarada anteriormente.
 class NoDeclarada < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final y el nombre de la variable que no fue declarada.
   def initialize(inicio, final, nombre)
     @inicio = inicio
     @final = final
     @nombre = nombre
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error (línea y columna de inicio y final) y el nombre de la variable que no fue declarada.
   def to_s
-    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la variable \"#{@nombre}\" no se encuentra declarada"
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: la variable \"#{@nombre}\" no se encuentra declarada"
   end
 end
 
+# Se crea un error de tipo para las funciones, se utiliza cuando se le pasa un operando con tipo incorrecto a alguna de las funciones del lenguaje.
 class ErrorDeTipoFuncion < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final, el nombre de la función y el tipo del operando
   def initialize(inicio, final, nombre_funcion,tipo)
     @inicio = inicio
     @final = final
@@ -56,24 +70,30 @@ class ErrorDeTipoFuncion < ContextError
     @tipo = tipo
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error (línea y columna de inicio y final), el nombre de la función, el tipo recibido y el tipo esperado.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el argumento de la #{@nombre_funcion} es de tipo \"#{@tipo}\" y se esperaba tipo \"Range\""
   end
 end
 
+# Se crea un error para cuando se intenta modificar la variable de un for.
 class ErrorModificarIteracion < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final y el nombre de la variable que se intentó modificar.
   def initialize(inicio, final, nombre)
     @inicio = inicio
     @final = final
     @nombre = nombre
   end
 
+  # Se define el to_s correspondiente que imprime le rango donde ocurre el error (línea y columna de inicio y final) y el nombre de la variable que se intenta modificar.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta modificar la variable \"#{@nombre}\" que pertenece a una iteración"
   end
 end
 
+# Se crea un error para cuando se intenta hacer una asignación entre una variable y una expresión de tipos distintos.
 class ErrorDeTipoAsignacion < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final, el tipo de la expresión, el nombre de la variable y el tipo de la variable.
   def initialize(inicio, final, tipo_asig, nombre, tipo_var)
     @inicio = inicio
     @final = final
@@ -82,148 +102,171 @@ class ErrorDeTipoAsignacion < ContextError
     @tipo_var = tipo_var
   end
 
+  # Se define el to_s correspondiente que imprime le rango donde ocurre el error (línea y columna de inicio y final), el tipo de la expresión, el nombre de la variable y el tipo de la misma.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: se intenta asignar algo del tipo \"#{@tipo_asig}\" a la variable \"#{@nombre}\" de tipo \"#{@tipo_var}\""
   end
 end
 
+# Se crea un error para cuando la condicion de un condicional es de tipo distinto a booleano.
 class ErrorCondicionCondicional < ContextError
   def initialize(inicio, final, tipo)
+  # Se encarga de inicializar con la ubicación de inicio y final y el tipo de la condición.
     @inicio = inicio
     @final = final
     @tipo = tipo
   end
 
+  # Se define el to_s correspondiente que imprime le rango donde ocurre el error (línea y columna de inicio y final) y el tipo de la condición.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la condición es de tipo \"#{@tipo}\""
   end
 end
 
+# Se crea un error para cuando la expresión de un case es de un tipo no adecuado.
 class ErrorExpresionCase < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final y el tipo de la expresión.
   def initialize(inicio, final, tipo)
     @inicio = inicio
     @final = final
     @tipo = tipo
   end
 
+  # Se define el to_s correspondiente que imprime le rango donde ocurre el error (línea y columna de inicio y final) y el tipo de la expresión.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la expresión del case es de tipo \"#{@tipo}\""
   end
 end
 
+# Se crea un error para cuando el rango de una iteración es de un tipo diferente a range.
 class ErrorRangoIteracion < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final y el tipo del rango.
   def initialize(inicio, final, tipo)
     @inicio = inicio
     @final = final
     @tipo = tipo
   end
 
+  # Se define el to_s correspondiente que imprime le rango donde ocurre el error (línea y columna de inicio y final) y el tipo del rango.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el rango de la iteración es de tipo \"#{@tipo}\""
   end
 end
 
+# Se crea un error para cuando la condición de la iteración es diferente de bool.
 class ErrorCondicionIteracion < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final y el tipo de la condición.
   def initialize(inicio, final, tipo)
     @inicio = inicio
     @final = final
     @tipo = tipo
   end
 
+  # Se define el to_s correspondiente que imprime le rango donde ocurre el error (línea y columna de inicio y final) y el tipo de la condición.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: la condición de la iteración es de tipo \"#{@tipo}\""
   end
 end
 
+# Se crea un error para cuando el rango de un caso es de un tipo diferente a range.
 class ErrorRangoCaso < ContextError
+  # Se encarga de inicializar con la ubicación de inicio y final y el tipo del rango.
   def initialize(inicio, final, tipo)
     @inicio = inicio
     @final = final
     @tipo = tipo
   end
 
+  # Se define el to_s correspondiente que imprime le rango donde ocurre el error (línea y columna de inicio y final) y el tipo del rango.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la linea #{@final.linea}, columna #{@final.columna}: el rango del caso es del tipo \"#{@tipo}\" en vez de range"
   end
 end
 
-class ErrorIteracion_I < ContextError
-   def to_s
-     "El tipo de expresion no es un booleano"
-   end
-end
-
-class ErrorIteracion_D < ContextError
-   def to_s
-     "El tipo de rango no es un range"
-   end
-end
-
+# Se crea una clase para englobar a todos los errores que puedan ocurrir en la verificación dinámica.
 class DynamicError < RuntimeError
 end
 
+# Se crea una clase para los errores de overflow que puedan existir en la verificación dinámica.
 class ErrorOverflow < DynamicError
+  # Se inicializa con la ubicación de inicio y final.
   def initialize(inicio, final)
     @incio = inicio
     @final = final
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error y un mensaje informativo.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: El resultado no puede representarse en 32 bits"
   end
 end
 
+# Se crea una clase para cuando existe un rango inválido en el programa.
 class RangoInvalido < DynamicError
+  # Se inicializa con la ubicación de inicio y final.
   def initialize(inicio, final)
     @inicio = inicio
     @final = final
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error y un mensaje informativo.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: El rango es inválido."
   end
 end
 
+# Se crea una clase para cuando existe un error de división entre cero.
 class DivisionCero < DynamicError
+  # Se inicializa con la ubicación de inicio y final.
   def initialize(inicio, final)
     @inicio = inicio
     @final = final
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error y un mensaje informativo.
   def to_s
-    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: Intento de división por cero."
+    "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: Intento de división entre cero."
   end
 end
 
+# Se crea una clase para cuando existe un rango vacio en el programa.
 class RangoVacio < DynamicError
+  # Se inicializa con la ubicación de inicio y final.
   def initialize(inicio, final)
     @inicio = inicio
     @final = final
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error y un mensaje informativo.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: El rango es vacio."
   end
 end
 
+# Se crea una clase de error para cuando una variable no se encuentra inicializada.
 class NoInicializada < DynamicError
+  # Se inicializa con la ubicación de inicio y final y el nombre de la variable.
   def initialize(inicio, final, nombre)
     @inicio = inicio
     @final = final
     @nombre = nombre
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error y el nombre de la variable que no ha sido inicializada.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: La variable \"#{@nombre}\" no ha sido inicializada."
   end
 end
 
+# Se crea una clase de error para cuando el rango de la función rtoi tiene mas de un elemento.
 class RangoRtoi < DynamicError
+  # Se inicializa con la ubicación de inicio y final.
   def initialize(inicio, final)
     @inicio = inicio
     @final = final
   end
 
+  # Se define el to_s correspondiente que imprime el rango donde ocurre el error y un mensaje informativo.
   def to_s
     "Error entre la línea #{@inicio.linea}, columna #{@inicio.columna} y la línea #{@final.linea}, columna #{@final.columna}: El rango de la función rtoi tiene mas de un elemento."
   end
@@ -277,8 +320,8 @@ generaClase(Object, 'AST', [])
   generaClase(AST, 'Caso'         , ['rango', 'instruccion'])
   generaClase(AST, 'Expresion'    , [])
     generaClase(Expresion, 'Modulo'         , ['operando izquierdo', 'operando derecho'])
-    generaClase(Expresion, 'Por'            , ['operando izquierdo', 'operando derecho'])#usar delegados
-    generaClase(Expresion, 'Mas'            , ['operando izquierdo', 'operando derecho'])#usar delegados
+    generaClase(Expresion, 'Por'            , ['operando izquierdo', 'operando derecho'])
+    generaClase(Expresion, 'Mas'            , ['operando izquierdo', 'operando derecho'])
     generaClase(Expresion, 'Resta'          , ['operando izquierdo', 'operando derecho'])
     generaClase(Expresion, 'Construccion'   , ['operando izquierdo', 'operando derecho'])
     generaClase(Expresion, 'Division'       , ['operando izquierdo', 'operando derecho'])
@@ -304,7 +347,7 @@ generaClase(Object, 'AST', [])
     generaClase(Expresion, 'Funcion_Top'    , ['argumento'])
   generaClase(AST, 'Instruccion', [])
     generaClase(Instruccion, 'Asignacion'      , ['var', 'expresion'])
-    generaClase(Instruccion, 'Bloque'          , ['declaraciones', '-instrucciones']) #TODO hay que arreglar lo del . y el - para el method_missing
+    generaClase(Instruccion, 'Bloque'          , ['declaraciones', '-instrucciones'])
     generaClase(Instruccion, 'Read'            , ['variable'])
     generaClase(Instruccion, 'Write'           , ['elementos'])
     generaClase(Instruccion, 'Writeln'         , ['elementos'])
@@ -373,52 +416,82 @@ class Programa
     @hijos[0][1].to_string(profundidad)
   end
 
+  # Se encarga de la verificación estática del programa.
   def check
+    # Llama al check de la instrucción del programa con una tabla de símbolos vacia.
     self.instruccion.check(SymTable::new)
+    # Asigna la ubicación final al objeto de la clase.
     @final = self.instruccion.final
   end
 
+  # Se encarga de la verificación dinámica del programa.
   def run
+    # Llama al run de la instrucción del programa con una tabla de símbolos nueva.
     self.instruccion.run(SymTable::new)
   end
 end
 
+# Se modifica la clase Expresión para agregar nuevas cosas.
 class Expresion
+  # Se agrega un type que permite saber el tipo de la expresión.
   attr_reader :type
 
+  # Se agrega en la clase singleton un atributo llamado tipos_correctos que almacena en forma de diccionario
+  # las combinaciones de tipos correctas que puede recibir una expresión.
   class << self
     attr_accessor :tipos_correctos
   end
 
+  # Se encarga de chequear los tipos de la expresión evaluada y toma como parametro la clase de error que va a
+  # utilizar para crear un nuevo error en caso de haberlo, agrega un error a la lista de errores de contexto si hay,
+  # en efecto, un error de tipos y asigna el tipo de la expresión a TypeError. Si la expresión tiene tipos correctos,
+  # se asigna el tipo resultante.
   def check_types(clase_error = ErrorDeTipo)
+    # Se guarda en la variable tiposHijos todos los tipos de los hijos de la clase que sean del tipo expresión.
     tiposHijos = @hijos.reject {|_, hijo| !(hijo.is_a? Expresion)}.map {|_, hijo| hijo.type}
+
+    # Se almacena en type el tipo resultante de utilizar, en los operadores, los tipos encontrados en los hijos de la clase.
     @type = self.class.tipos_correctos[tiposHijos]
+    # Si type da nil es porque la combinación de hijos no se encuentra en el diccionario de tipos correctos y por ende hay un error de tipo.
     if @type.nil? then
+      # Se asigna TypeError al tipo.
       @type = Rangex::TypeError
+      # Se crea un nuevo error de contexto solamente si alguno de los operandos no era de tipo TypeError antes. Esto es para evitar
+      # replicar los errores y agregar errores de contexto de mas.
       unless tiposHijos.include?(Rangex::TypeError) then
         $ErroresContexto << clase_error::new(inicio, final, self.class.name.gsub(/_/,' '), *tiposHijos)
       end
     end
   end
 
+  # Se encarga de detectar si existe overflow en una operación. Toma como parametro el resultado de la operación e indica si existe overflow en la misma.
   def detectar_overflow(resultado)
-    raise ErrorOverflow::new(@inicio, @final) if (resultado > 2147483647 or resultado < -2147483647)
+    # Se levanta una excepcion si existe overflow en el resultado y sino se devuelve el resultado.
+    raise ErrorOverflow::new(@inicio, @final) if (resultado > 2**31 - 1 or resultado < -2**31)
     resultado
   end
 end
 
+# Se modifica la clase Modulo para agregar nuevos metodos.
 class Modulo
+  # Se indican los tipos correctos que acepta esta expresión.
   @tipos_correctos = { [Rangex::Int, Rangex::Int] => Rangex::Int }
 
+  # Se encarga de la verificación estática del programa.
   def check(tabla)
+    # Llama al check del operando izquierdo y asigna la ubicación de inicio de la expresión.
     self.operando_izquierdo.check(tabla)
     @inicio = self.operando_izquierdo.inicio
+    # Llama al check del operando derecho y asigna la ubicación final de la expresión.
     self.operando_derecho.check(tabla)
     @final = self.operando_derecho.final
+    # Por ultimo se llama a check_types para revisar que los tipos de los operandos sean correctos
     check_types
   end
 
+  # Se encarga de la verificacion dinamica del programa.
   def run(tabla)
+    # Se hace la operación de modulo y se llama a detectar overflow.
     detectar_overflow(self.operando_izquierdo.run(tabla) % self.operando_derecho.run(tabla))
   end
 end

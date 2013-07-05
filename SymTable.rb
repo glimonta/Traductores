@@ -4,8 +4,12 @@
 #Se definen los posibles errores que se pueden reportar desde la tabla de simbolos, con sus respectivos constructores y sus procedimiento
 #to_s requerido para imprimir el error
 
+#Se crea una superclase que engloba a todos los errores de la tabla de simbolos
+class SymTableError < RuntimeError
+end
+
 #Error que permite ver al usuario que se trato de redefinir un simbolo en la tabla de simbolos cuando esto no es posible
-class RedefinirError < RuntimeError
+class RedefinirError < SymTableError
   def initialize(token, token_viejo)
     @token = token
     @token_viejo = token_viejo
@@ -17,7 +21,7 @@ class RedefinirError < RuntimeError
 end
 
 #Error que permite notificar al usuario sobre que no se pudo actualizar un simbolo en la tabla de simbolos
-class UpdateError < RuntimeError
+class UpdateError < SymTableError
   def initialize(token)
     @token = token
   end
@@ -28,7 +32,7 @@ class UpdateError < RuntimeError
 end
 
 #Este error permite al usuario saber que no se pudo eliminar el simbolo de la tabla de simbolos
-class DeleteError < RuntimeError
+class DeleteError < SymTableError
   def initialize(token)
     @token = token
   end

@@ -25,16 +25,12 @@ def main
       puts $ErroresContexto
     else
       ast.run
-      #puts ast
     end
+  # Se rescatan los errores que puedan ser generados y se imprimen en pantalla
   rescue LexerException => l
     puts l.lexer
-  rescue RedefinirError => r
-    puts r
-  rescue UpdateError => s
+  rescue SymTableError => s
     puts s
-  rescue DeleteError => d
-    puts d
   rescue ErrorSintactico => e
     puts e
   rescue DynamicError => d

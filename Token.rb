@@ -9,13 +9,17 @@ require 'Ubicacion'
 class ObjetoDeTexto
   attr_accessor :linea, :columna, :texto
 
+  # Se encarga de asignar el inicio del objeto de texto como una ubicación
   def inicio
     Ubicacion::new(@linea, @columna)
   end
 
+  # Se encarga de asignar el final del objeto de texto como una ubicación
   def final
+    # El final sera el mismo inicio si la longitud es cero
     return self.inicio if texto.length.zero?
 
+    # Se actualizan las líneas y columnas que abarca el objeto de texto y finalmente se crea la nueva ubicación
     lineas = (texto + ' ').lines.to_a.length.pred
 
     if lineas.zero? then
@@ -178,17 +182,20 @@ class Array
     end
   end
 
+  # Se encarga de retornar la ubicación de inicio de un array
   def inicio
     return nil if self.empty?
     self.first.inicio
   end
 
+  # Se encarga de retornar la ubicación final de un array
   def final
     return nil if self.empty?
     self.last.final
   end
 end
 
+# Se agregan nuevos metodos to_type para los tipos del lenguaje, esto devuelve el tipo de dato correspondiente
 class TkInt  ; def to_type; Rangex::Int  ; end; end
 class TkBool ; def to_type; Rangex::Bool ; end; end
 class TkRange; def to_type; Rangex::Range; end; end
