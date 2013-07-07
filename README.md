@@ -1,10 +1,13 @@
+Proyecto de Traductores CI-3725
+===================================
+Interpretador del lenguaje RangeX
+===================================
+
 Gabriela Limonta. Carnet 10-10385.
 John Delgado. Carnet 10-1085.
 
-Proyecto de Traductores CI-3725
-Interpretador del lenguaje RangeX
-
 Primera entrega (Lexer)
+-----------------------
 
 Para esta primera entrega se realiza la implementación en lenguaje ruby (version 1.8.7) de un lexer para el lenguaje RangeX.
 
@@ -19,6 +22,7 @@ Finalmente se tiene un metodo to_s que lleva a un string algun elemento de esta 
 Con esto implementado solo queda el main del programa que consiste en leer el archivo de entrada, crear un objeto de tipo Lexer, ejecutar el método yylex mientras aun haya entrada que consumir y finalmente se imprimen los tokens y su ubicación (linea, columna) en caso de no haber errores, si hay errores se imprimen solamente los errores y en donde están ubicados.
 
 Segunda Entrega (Parser)
+--------------------------
 
 Para esta segunda entrega se continua utilizando el lenguaje Ruby (version 1.8.7) junto con el generador de analizadores sintácticos Racc (version 1.4.5) para la realización de un parser del lenguaje RangeX.
 
@@ -315,6 +319,7 @@ De este modo en el main solamente se crea un nuevo lexer con el archivo de entra
 
 
 Tercera entrega (Tabla de Símbolos y Verificaciones estáticas)
+---------------------------------------------------------------
 
 Para esta tercera entrega se continua utilizando el lenguaje Ruby (version 1.8.7) junto con el generador de analizadores sintácticos Racc (version 1.4.5) para la realización de un parser del lenguaje RangeX que ahora contiene la tabla de símbolos y verificaciones estáticas.
 
@@ -330,6 +335,7 @@ Si hay un problema en el chequeo de tipos entonces se genera un error; lo que se
 
 
 Cuarta entrega (Interpretador con verificaciones dinámicas)
+------------------------------------------------------------
 
 Para esta cuarta entrega se continua utilizando el lenguaje Ruby (version 1.8.7) junto con el generador de analizadores sintácticos Racc (version 1.4.5) para la realización de un interpretador del lenguaje RangeX que contenga verificaciones dinámicas.
 
